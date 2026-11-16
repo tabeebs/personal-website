@@ -20,6 +20,24 @@ The clouds are real 3D clouds, rendered the way the Seed Data landing diorama re
 
 Slow devices lower the scene resolution once. Reduced-motion visitors get a still sky, and the pointer trail still works for them.
 
+## Meadow
+
+A strip of crayon-drawn ASCII grass and flowers grows on the page's horizon, the soft top edge of the content panel (`src/meadow.js`). It is drawn by the sky's own glyph pass, in the same 8×12 tiles as the clouds, from a small texture the module fills each frame.
+
+The flowers bloom where it rains:
+
+- **Rain:** click or tap the sky and rain falls from there. Hold to keep it raining, and drag to move the shower. Every so often a light shower passes by itself.
+- **Bloom:** watered flowers open over about a second (daisies, tulips, lupins and forget-me-nots), stay open for a while, then close back into buds.
+- **Brush:** moving the pointer through the meadow bends the grass and makes the flowers lean.
+
+The look comes from risograph crayon drawings. Fills are hatched with short vertical strokes (`| ! : ;`) over a pastel layer printed slightly out of register, with waxy grain and rounded edges. Everything redraws about eight times a second ("on twos"), so the drawing boils like hand-drawn animation. The palette lives in `src/crayon.js` and is shared with the doodles.
+
+## Doodles
+
+Each collection has a small crayon drawing beside it (`src/doodles.js`): a pot of flowers for Blog, a vase for Projects, a single flower for Notes. At rest a drawing boils slowly. Hovering its row, focusing its link or tapping it brings it to life: the colour layer slides into register, the bouquet lifts, a stem grows out of the vase, and the flower opens. Off-screen doodles don't redraw.
+
+Reduced-motion visitors get still drawings with no boil, and tapping the sky waters the flowers without animated rain.
+
 ## Change it
 
 ```bash
@@ -27,7 +45,7 @@ npm install
 npm run build
 ```
 
-Edit `src/sky.js`, then run the build. `build/sky.js` is committed, because the site itself has no build step. Add `?debug` to the URL to expose the renderer on `window.__sky`.
+Edit the files in `src/`, then run the build. The `build/` output is committed, because the site itself has no build step. Add `?debug` to the URL to expose the renderer on `window.__sky`, including `step(n)` to run frames by hand.
 
 ## Run locally
 

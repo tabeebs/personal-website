@@ -5,6 +5,8 @@
 // dots in open sky, grey glyphs on white cloud, a soft panel behind the content and a fade into the page.
 // Source for build/sky.js: rebuild with `npm run build` after editing.
 import * as THREE from 'three';
+import { GLYPHS, PAL, BOIL_MS } from './crayon.js';
+import { createMeadow, MROWS } from './meadow.js';
 
 const ROW_PX = 9;                          // one glyph row is about 9 css px, as on the diorama
 const COARSE = matchMedia('(pointer: coarse)').matches;
@@ -74,7 +76,6 @@ function buildClouds(scene) {
 // alpha, so a cell knows how much of it is cloud and how its neighbours look). The look matches the reference:
 // cyan tiles with white seams, drifting patches of deeper blue, a small dot per tile (a heavier square in the
 // deep patches), and clouds as clean white tiles outlined in ( ) ; : ~ glyphs, heavier o 8 in their shaded undersides.
-const GLYPHS = " .'`,:;-~_()o8O/\\|+*";
 const GI = Object.fromEntries([...GLYPHS].map((c, i) => [c, i]));
 const gg = (c) => GI[c].toFixed(1);
 function buildAtlas() {
@@ -89,9 +90,10 @@ function buildAtlas() {
 }
 const CW = 8, CH = 12;                       // glyph cell in css px, as in the reference
 const CARD_PAD_X = 64, CARD_PAD_TOP = 56;    // the soft white panel reaches this far past the text column
+const palGlsl = `const vec3 PAL[${PAL.length}] = vec3[${PAL.length}](${PAL.map((h) => `vec3(${[1, 3, 5].map((i) => (parseInt(h.slice(i, i + 2), 16) / 255).toFixed(4)).join(',')})`).join(',')});`;
 const asciiFrag = /* glsl */`
 precision highp float;
-uniform sampler2D uScene, uAtlas, uWind; uniform vec2 uView, uCell, uGrid; uniform float uTime, uN; uniform vec3 uCard;
+uniform sampler2D uScene, uAtlas, uWind, uMeadow; uniform vec4 uMeadowInfo; uniform vec2 uView, uCell, uGrid; uniform float uTime, uN; uniform vec3 uCard;
 in vec2 vUv; out vec4 outColor;
 float h21(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
 float vn(vec2 p){ vec2 i=floor(p),f=fract(p); f=f*f*(3.-2.*f); return mix(mix(h21(i),h21(i+vec2(1,0)),f.x),mix(h21(i+vec2(0,1)),h21(i+vec2(1,1)),f.x),f.y); }
@@ -110,10 +112,18 @@ const vec3 SHADE = vec3(214.,224.,236.)/255.;   // shaded cloud underside
 const vec3 DOT_L = vec3(120.,150.,172.)/255.;
 const vec3 DOT_D = vec3(41.,100.,144.)/255.;
 const vec3 WINDC = vec3(44.,98.,178.)/255.;
+${palGlsl}
+// one glyph from the atlas, drawn into a cell (gv is the position inside the cell, 0..1)
+float glyph(float gl, vec2 gv, vec2 dx, vec2 dy, float small){
+  vec2 gs = (gv-.5)/small+.5;
+  float inside = step(0.,gs.x)*step(gs.x,1.)*step(0.,gs.y)*step(gs.y,1.);
+  return inside*smoothstep(.05,.95,textureGrad(uAtlas,vec2((gl+clamp(gs.x,0.,1.))/uN,clamp(gs.y,0.,1.)),dx/(uN*small),dy/small).r);
+}
 float cover(vec2 uv, float lod){ return clamp((textureLod(uScene,uv,lod).a*16.-1.)/14.,0.,1.); }
 void main(){
   vec2 px = vec2(vUv.x, 1.-vUv.y)*uView;                // css px, y down
   vec2 g = px/uCell, cell = floor(g), gv = g-cell;
+  vec2 gdx = dFdx(g), gdy = dFdy(g);
   vec2 cuv = vec2((cell.x+.5)*uCell.x/uView.x, 1.-(cell.y+.5)*uCell.y/uView.y);
   ivec2 sz = textureSize(uScene,0);
   float lodC = log2(float(sz.x)/uGrid.x)+.05;
@@ -163,6 +173,8 @@ void main(){
     ink = WINDC; strength = min(1., wn.r*1.2); dotM = 0.;
     bg = mix(bg, DEEP, wn.r*.35*(1.-cov*.6));
   }
+  // rain from the meadow module: a short streak per drop, over sky and cloud alike
+  if(wn.b > .03){ gl = floor(wn.a*255.+.5); ink = PAL[12]; strength = min(1., wn.b*1.15); dotM = 0.; small = 1.; bg = mix(bg, DEEP, wn.b*.22); }
   vec3 c = bg;
   if(gl >= 0.){
     vec2 dx = dFdx(g), dy = dFdy(g);
@@ -186,6 +198,46 @@ void main(){
     float d = max(max(uCard.x - px.x, px.x - uCard.z), (uCard.y + wob) - px.y);
     c = mix(c, BG, smoothstep(14., -12., d));
   }
+
+  // the meadow, growing on that edge (see meadow.js). Its colour layer is printed a little out of register
+  // with its line layer, and both redraw on twos, like the crayon drawings it is modelled on.
+  float mk = uMeadowInfo.x - cell.y;
+  if(uMeadowInfo.w > .5 && mk >= -1. && mk < uMeadowInfo.y + 1.){
+    float boil = uMeadowInfo.z;
+    vec2 off = vec2(1.8, 1.3) + (vec2(h21(vec2(boil,3.1)), h21(vec2(boil,9.7))) - .5)*1.3;
+    vec2 pf = px - off, cf = floor(pf/uCell);
+    float kf = uMeadowInfo.x - cf.y;
+    if(kf >= 0. && kf < uMeadowInfo.y && cf.x >= 0. && cf.x < uGrid.x){
+      ivec2 ci = ivec2(int(cf.x), int(kf));
+      vec4 mf = texelFetch(uMeadow, ci, 0);
+      float fi = floor(mf.b*255.+.5);
+      if(fi > .5){
+        // round the fill into a blob: corners facing open sky are cut back along a wobbly curve
+        float nl = cf.x > .5 ? texelFetch(uMeadow, ci+ivec2(-1,0), 0).b : 0., nr = cf.x < uGrid.x-1.5 ? texelFetch(uMeadow, ci+ivec2(1,0), 0).b : 0.;
+        float nu = kf < uMeadowInfo.y-1.5 ? texelFetch(uMeadow, ci+ivec2(0,1), 0).b : 0., nd = kf > .5 ? texelFetch(uMeadow, ci+ivec2(0,-1), 0).b : 1.;
+        vec2 q = pf/uCell - cf;                                    // 0..1 inside the cell, y down
+        vec2 e = vec2(q.x < .5 ? (nl > 0. ? 0. : .5-q.x) : (nr > 0. ? 0. : q.x-.5),
+                      q.y < .5 ? (nu > 0. ? 0. : .5-q.y) : (nd > 0. ? 0. : q.y-.5)) * 2.;
+        float wob = (h21(floor(pf/2.) + boil*.53) - .5)*.22;
+        float blobM = 1. - smoothstep(.86, 1.02, length(e) + wob);
+        // waxy vertical streaks, with paper showing through between them
+        float sx = floor(pf.x/1.6);
+        float st = h21(vec2(sx, floor((pf.y + h21(vec2(sx, boil))*14.)/4.5)) + boil*.29);
+        float wax = mix(.5, 1., smoothstep(.18, .42, st));
+        c = mix(c, PAL[int(fi)], mf.a*.95*blobM*wax);
+      }
+    }
+    if(mk >= 0. && mk < uMeadowInfo.y){
+      vec4 m = texelFetch(uMeadow, ivec2(int(cell.x), int(mk)), 0);
+      if(m.a > .01){
+        float code = floor(m.r*255.+.5), hb = h21(cell + boil*1.731);
+        // hatch cells pick a fresh crayon stroke every drawing
+        float mg = code > 254.5 ? (hb<.4?${gg('|')}:hb<.65?${gg('!')}:hb<.82?${gg(':')}:hb<.93?${gg(';')}:${gg("'")}) : code;
+        vec2 jg = gv + (vec2(h21(cell+boil*.91), h21(cell.yx+boil*1.37))-.5)*vec2(.18,.1);
+        c = mix(c, PAL[int(floor(m.g*255.+.5))], glyph(mg, jg, gdx, gdy, 1.)*m.a);
+      }
+    }
+  }
   outColor = vec4(c,1.);
 }`;
 
@@ -194,7 +246,8 @@ async function main() {
   const canvas = document.getElementById('sky');
   const content = document.getElementById('content');
   if (!canvas) return;
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
+  const DEBUG = /[?&]debug/.test(location.search);
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance', preserveDrawingBuffer: DEBUG });
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
 
@@ -223,17 +276,25 @@ async function main() {
   const vtx = `in vec3 position; in vec2 uv; out vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy,0.,1.); }`;
   const ascii = new THREE.RawShaderMaterial({ glslVersion: THREE.GLSL3, vertexShader: vtx, fragmentShader: asciiFrag, depthTest: false, depthWrite: false,
     uniforms: { uScene: { value: rt.texture }, uAtlas: { value: buildAtlas() }, uWind: { value: windTex }, uView: { value: new THREE.Vector2(1, 1) },
-      uCell: { value: new THREE.Vector2(CW, CH) }, uGrid: { value: new THREE.Vector2(1, 1) }, uTime: time, uN: { value: GLYPHS.length }, uCard: { value: new THREE.Vector3(0, -10000, 0) } } });
+      uCell: { value: new THREE.Vector2(CW, CH) }, uGrid: { value: new THREE.Vector2(1, 1) }, uTime: time, uN: { value: GLYPHS.length }, uCard: { value: new THREE.Vector3(0, -10000, 0) },
+      uMeadow: { value: null }, uMeadowInfo: { value: new THREE.Vector4(0, MROWS, 0, 0) } } });
   const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), ascii); quad.frustumCulled = false;
   const post = new THREE.Scene(); post.add(quad); const postCam = new THREE.Camera();
 
   // pointer wind, one texel per glyph cell (row 0 is the top row)
   let cols = 1, rows = 1, wind = new Float32Array(1), windDir = new Uint8Array(1);
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const meadow = createMeadow({ CW, CH, reduced: still });
+  let meadowTex = null;
   function setGrid(c, r) {
     cols = c; rows = r; wind = new Float32Array(c * r); windDir = new Uint8Array(c * r);
     windTex.dispose();
     windTex = new THREE.DataTexture(new Uint8Array(c * r * 4), c, r, THREE.RGBAFormat); windTex.needsUpdate = true;
     ascii.uniforms.uWind.value = windTex;
+    meadow.resize(c, r);
+    meadowTex?.dispose();
+    meadowTex = new THREE.DataTexture(meadow.cells, c, MROWS, THREE.RGBAFormat); meadowTex.needsUpdate = true;
+    ascii.uniforms.uMeadow.value = meadowTex;
   }
 
   let qScale = 1, W = 1, H = 1;
@@ -277,11 +338,16 @@ async function main() {
       }
     }
     lastP = { x, y };
+    meadow.move(x, y);
   }, { passive: true });
-  document.addEventListener('mouseleave', () => { lastP = null; });
+  document.addEventListener('mouseleave', () => { lastP = null; meadow.leave(); });
+  addEventListener('pointerup', () => meadow.up());
+  addEventListener('pointercancel', () => meadow.up());
+  addEventListener('blur', () => meadow.leave());
   addEventListener('pointerdown', (e) => {
     const b = canvas.getBoundingClientRect(), x = e.clientX - b.left, y = e.clientY - b.top;
     if (y > b.height || e.target.closest('a, button')) return;
+    meadow.down(x, y);   // rain falls from where the sky was clicked
     // a gust: strokes fanning out from the click, clouds blown back
     for (let k = 0; k < 28; k++) {
       const a = k / 28 * Math.PI * 2, ca = Math.cos(a), sa = Math.sin(a), dir = dirOf(ca, sa);
@@ -339,16 +405,26 @@ async function main() {
 
     // the trail fades over about half a second, whatever the display's refresh rate
     const data = windTex.image.data, fade = Math.exp(-(realDt || .016) * 4.2);
-    for (let i = 0; i < wind.length; i++) {
-      const v = wind[i]; data[i * 4] = Math.min(255, v * 255); data[i * 4 + 1] = windDir[i] * 64;
-      wind[i] = v > .01 ? v * fade : 0;
-    }
-    windTex.needsUpdate = true;
-
     if (content) {
       const sr = canvas.getBoundingClientRect(), inner = (content.firstElementChild || content).getBoundingClientRect();
       ascii.uniforms.uCard.value.set(inner.left - sr.left - CARD_PAD_X, inner.top - sr.top - CARD_PAD_TOP, inner.right - sr.left + CARD_PAD_X);
+      // the meadow grows along the panel's top edge
+      const card = ascii.uniforms.uCard.value, row = Math.floor(card.y / CH);
+      if (row > MROWS && row < rows) {
+        meadow.setGround(row, Math.max(0, card.x), Math.min(W, card.z));
+        ascii.uniforms.uMeadowInfo.value.set(row, MROWS, still ? 0 : Math.floor(performance.now() / BOIL_MS) % 997, 1);
+      } else ascii.uniforms.uMeadowInfo.value.w = 0;
     }
+    meadow.update(performance.now() / 1000, realDt || .016);
+    if (meadowTex) meadowTex.needsUpdate = true;
+
+    const rain = meadow.rain, rainG = meadow.rainG;
+    for (let i = 0; i < wind.length; i++) {
+      const v = wind[i]; data[i * 4] = Math.min(255, v * 255); data[i * 4 + 1] = windDir[i] * 64;
+      data[i * 4 + 2] = Math.min(255, (rain[i] || 0) * 255); data[i * 4 + 3] = rainG[i] || 0;
+      wind[i] = v > .01 ? v * fade : 0;
+    }
+    windTex.needsUpdate = true;
 
     if (shadowTick++ % 3 === 0) sun.shadow.needsUpdate = true;
     renderer.setRenderTarget(rt); renderer.setClearColor(0xa0d4ee, 0); renderer.clear(); renderer.render(scene, camera);
@@ -361,7 +437,6 @@ async function main() {
   // Live loop. Slow machines drop the scene resolution once; reduced-motion visitors get a still sky
   // (the pointer trail still answers them).
   let clock = 0, last = performance.now(), frames = 0, decided = false, tSum = 0, tN = 0;
-  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const loop = (now) => {
     if (now - last < 14) { requestAnimationFrame(loop); return; }
     const dt = (now - last) / 1000; last = now;
@@ -374,6 +449,7 @@ async function main() {
     requestAnimationFrame(loop);
   };
   requestAnimationFrame(loop);
-  if (location.search.includes('debug')) window.__sky = { renderer, scene, sun, camera, resize, rt, ascii, clouds };
+  // ?debug: expose the renderer, and step(n, dt) to run frames by hand (handy where animation frames are paused)
+  if (DEBUG) window.__sky = { renderer, scene, sun, camera, resize, rt, ascii, clouds, meadow, step(n = 1, dt = 1 / 30) { for (let i = 0; i < n; i++) { clock += dt; drawFrame(clock, dt); } } };
 }
 main().catch((e) => { console.error(e); document.getElementById('sky')?.style.setProperty('display', 'none'); });

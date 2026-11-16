@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "start": "python -m http.server 5173",
-    "build": "esbuild src/sky.js --bundle --format=esm --minify --legal-comments=none --outfile=build/sky.js"
+    "build": "esbuild src/sky.js src/doodles.js --bundle --format=esm --minify --legal-comments=none --outdir=build"
   },
   "devDependencies": {
     "esbuild": "0.28.2",

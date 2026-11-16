@@ -62,6 +62,19 @@ a { color: inherit; }
 .collections ul { list-style: none; padding: 0; margin: 0; }
 .collections li { display: flex; align-items: center; gap: 12px; font-size: 13.5px; padding: 6px 0; }
 .collections li a { text-decoration: none; }
+
+/* Crayon doodles beside each collection (src/doodles.js). They tip and lift a little on hover. */
+.doodle {
+  flex: none;
+  width: 36px; height: 36px;
+  margin: -4px 0 -4px -2px;
+  transform-origin: 50% 90%;
+  transition: transform .45s cubic-bezier(.3, 1.7, .45, 1);
+}
+.doodle canvas { display: block; width: 36px; height: 36px; }
+.collections li:hover .doodle,
+.collections li:focus-within .doodle { transform: translateY(-2px) rotate(-5deg); }
+@media (prefers-reduced-motion: reduce) { .doodle { transition: none; } }
 .collections li span:last-child { color: var(--muted); }
 .rule { flex: 1; height: 1px; background: var(--rule); }
 
