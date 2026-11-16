@@ -1,9 +1,10 @@
-// Doodles: a small crayon drawing beside each collection (a pot of flowers, a vase, a single stem), in the same
-// crayon language as the meadow. Fills are rows of short waxy strokes over a pastel layer printed slightly out
-// of register, the linework is navy crayon, and the whole drawing redraws a few times a second.
+// Doodles: crayon renditions of the resume, GitHub and LinkedIn icons beside each link, in the same crayon
+// language as the meadow. Fills are rows of short waxy strokes over a pastel layer printed slightly out of
+// register (letters and the Octocat are paper left bare), the linework is navy crayon, and the whole drawing
+// redraws a few times a second.
 // At rest a drawing boils slowly. Hovering its row (or focusing its link) boils it on twos, slides the colour
-// layer into register, and the drawing comes to life: the bouquet lifts, a stem grows out of the vase, the
-// flower opens.
+// layer into register, and the drawing comes to life: the resume writes itself out over a second page, the
+// Octocat perks its ears and lifts its tail, the dot on the LinkedIn i hops.
 import { PAL, C, BOIL_MS, hash } from './crayon.js';
 
 const SIZE = 36;                         // css px, drawings are authored in this space
@@ -18,60 +19,65 @@ const blob = (cx, cy, rx, ry, rot = 0, n = 9) => Array.from({ length: n }, (_, i
   const a = i / n * Math.PI * 2, x = Math.cos(a) * rx, y = Math.sin(a) * ry * (1 - .25 * Math.max(0, Math.sin(a)));
   return [cx + x * Math.cos(rot) - y * Math.sin(rot), cy + x * Math.sin(rot) + y * Math.cos(rot)];
 });
-const fill = (pts, ink, tint) => ({ kind: 'fill', pts, ink, tint });
+const fill = (pts, ink, tint, holes = []) => ({ kind: 'fill', pts, ink, tint, holes });
+const rect = (x0, y0, x1, y1) => [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
+const roundRect = (x0, y0, x1, y1, r, n = 4) => {
+  const pts = [], corners = [[x1 - r, y0 + r, -Math.PI / 2], [x1 - r, y1 - r, 0], [x0 + r, y1 - r, Math.PI / 2], [x0 + r, y0 + r, Math.PI]];
+  for (const [cx, cy, a0] of corners) for (let i = 0; i <= n; i++) { const a = a0 + i / n * Math.PI / 2; pts.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r]); }
+  return pts;
+};
 const line = (pts, ink = C.navy, w = 1.5) => ({ kind: 'line', pts, ink, w });
 
 // Each drawing is a function of t, how alive it is (0 at rest, 1 hovered).
 const DRAWINGS = {
-  // Blog: a pot of flowers, like the reference's first tile
-  pot(t) {
-    const lift = ease(t) * 2.6, sp = 1 + .1 * ease(t);
-    const heads = [[11, 13, C.teal, C.tealP], [16.5, 8.5, C.lilac, C.lilacP], [22.5, 10, C.teal, C.tealP], [26, 15.5, C.tomato, C.tomatoP], [15, 17, C.lilac, C.lilacP]];
-    const out = [];
-    heads.forEach(([x, y, ink, tint], i) => {
-      const hx = 18 + (x - 18) * sp, hy = y - lift * (1 - i * .12);
-      out.push(line([[18 + (i - 2) * .9, 23], [lerp(18, hx, .55), lerp(23, hy, .55) + 1], [hx, hy + 2]], i % 2 ? C.navy : C.teal, 1.2));
-    });
-    heads.forEach(([x, y, ink, tint], i) => {
-      const hx = 18 + (x - 18) * sp, hy = y - lift * (1 - i * .12);
-      out.push(fill(blob(hx, hy, 3.3 + .3 * t, 2.7 + .3 * t, i * .7), ink, tint));
-    });
-    out.push(fill([[10.5, 22.5], [25.5, 22.5], [24.6, 30], [23.5, 33.4], [12.5, 33.4], [11.4, 30]], C.mustard, C.mustardP));
-    out.push(line([[10.2, 22.6], [25.8, 22.4]], C.navy, 1.4));
-    return out;
-  },
-  // Projects: a vase; a stem grows out of it with a flower on top
-  vase(t) {
+  // Resume: a sheet with a photo and lines of text; on hover the lines write themselves out and a second
+  // page slides out from behind
+  resume(t) {
     const g = ease(t), out = [];
-    // the vase sits a little smaller and lower, leaving the sky above it for the stem
-    const V = (pts) => pts.map(([x, y]) => [18 + (x - 18) * .86, 34.5 - (34.5 - y) * .8]);
-    if (g > .02) {
-      const top = lerp(12, 4.4, g), sway = Math.sin(g * Math.PI) * 1.4;
-      out.push(line([[18, 12], [18 + sway * .6, lerp(12, top + 3, .5)], [18 + sway, top + 2.5]], C.navy, 1.2));
-      if (g > .35) out.push(fill(blob(18 + sway, top + 1.2, 2.8 * ease((g - .35) / .65), 2.3 * ease((g - .35) / .65), .3), C.tomato, C.tomatoP));
-      if (g > .5) out.push(fill(blob(16 + sway * .6, lerp(12, top + 3, .5) + 1, 2.2 * (g - .5) * 2, 1.1 * (g - .5) * 2, -.6), C.teal, C.tealP));
-    }
-    const body = [[15.6, 6.8], [20.4, 6.8], [20, 10], [24.5, 14], [27.4, 19.5], [26.8, 25.5], [23.8, 31], [18, 33.6], [12.2, 31], [9.2, 25.5], [8.6, 19.5], [11.5, 14], [16, 10]];
-    out.push(fill(V(body), C.mustard, C.mustardP));
-    out.push(fill(V([[8.7, 20.2], [27.3, 20.2], [27.2, 23.4], [8.8, 23.4]]), C.lilac, C.lilacP));
-    out.push(line(V(circle(18, 7, 2.6, 10).concat([[20.6, 7]])), C.navy, 1.3));
+    const bx = lerp(1.6, 4.2, g), by = lerp(-1, -2.4, g);
+    out.push(fill([[10 + bx, 5 + by], [29 + bx, 5 + by], [29 + bx, 32.5 + by], [10 + bx, 32.5 + by]], C.mustard, C.mustardP));
+    out.push(fill([[7.5, 5.5], [22.5, 5.5], [27, 10], [27, 33.5], [7.5, 33.5]], C.teal, C.tealP));
+    out.push(fill(circle(12.2, 11.4, 2.5, 8), C.tomato, C.tomatoP));
+    out.push(line([[22.5, 5.6], [22.5, 10], [26.9, 10]], C.navy, 1.1));
+    const w = lerp(.55, 1, g);
+    out.push(line([[16, 10], [16 + 5 * w, 10]], C.navy, 1.3));
+    out.push(line([[16, 13.2], [16 + 3.4 * w, 13.2]], C.navy, 1));
+    [[18.5, 12.5], [22, 10.5], [25.5, 12.5], [29, 7.5]].forEach(([y, len], i) => {
+      const k = clamp01((g - i * .12) / .55);
+      out.push(line([[10.8, y], [10.8 + len * lerp(.5, 1, k), y]], C.navy, 1.05));
+    });
     return out;
   },
-  // Notes: a single flower on a stem with a leaf, like the reference's lilac bloom
-  stem(t) {
-    const o = ease(t), out = [];
-    out.push(line([[18, 34.5], [17.4, 25], [18, 17]], C.navy, 1.7));
-    out.push(fill(blob(23, 26.5 - o * 1.4, 5.2, 2.3, -.55 - o * .3), C.lilac, C.lilacP));
-    out.push(fill(blob(13.4, 29.5 - o * .8, 3.6, 1.7, .6 + o * .2), C.teal, C.tealP));
-    const r = 4.6 + o * 1.5, cx = 18, cy = 11.5 - o * 1.2;
-    for (let i = 0; i < 5; i++) {
-      const a = -Math.PI / 2 + i / 5 * Math.PI * 2 + o * .3;
-      out.push(fill(blob(cx + Math.cos(a) * r, cy + Math.sin(a) * r, 4.2 + o * .5, 3.1 + o * .4, a), i % 2 ? C.teal : C.lilac, i % 2 ? C.tealP : C.lilacP));
-    }
-    out.push(fill(circle(cx, cy, 2.5 + o * .4, 8), C.mustard, C.mustardP));
-    return out;
+  // GitHub: the Octocat mark, a crayon circle with the cat left as bare paper
+  github(t) {
+    const g = ease(t), ear = g * 1.1, tail = g;
+    const cat = [
+      [12.4, 9 - ear], [14.6, 11.6], [18, 11], [21.4, 11.6], [23.6, 9 - ear], [24.6, 12.4], [25, 15.6], [24, 19.2],
+      [21.5, 21.3], [20.3, 22], [21.2, 23.6], [21.3, 30.8], [14.7, 30.8], [14.7, 27.2],
+      [12.4, 27.4 - tail * .6], [10.6, 25.8 - tail * 1.4], [9.6 - tail * .4, 23.6 - tail * 2.2], [11.1, 23.9 - tail * 1.4], [12.6, 25.2 - tail * .6], [14.7, 25],
+      [14.8, 23.6], [15.7, 22], [14.5, 21.3], [12, 19.2], [11, 15.6], [11.4, 12.4],
+    ];
+    return [
+      fill(circle(18, 18, 14.2, 20), C.navy, C.lilac, [cat]),
+      line(circle(18, 18, 14.2, 20).concat([[18 + 14.2, 18]]), C.navy, 1.1),
+    ];
+  },
+  // LinkedIn: the rounded square with "in" left as bare paper; the dot on the i hops
+  linkedin(t) {
+    const g = ease(t), hop = Math.sin(g * Math.PI) * 1.6 + g * .4;
+    const holes = [
+      rect(10.4, 15.4, 14.2, 26.6),
+      circle(12.3, 11.4 - hop, 2.2, 8),
+      [[16.4, 26.6], [16.4, 15.4], [20, 15.4], [20, 17], [21.5, 15.6], [23.6, 15.2], [25.6, 16], [26.7, 18.2], [26.8, 26.6], [23.2, 26.6],
+        [23.2, 20.3], [22.6, 19.1], [21.3, 19.1], [20.3, 20], [20.1, 26.6]],
+    ];
+    const sq = roundRect(5.5, 5.5, 30.5, 30.5, 4.6);
+    return [fill(sq, C.blue, C.blueP, holes), line(sq.concat([sq[0]]), C.navy, 1)];
   },
 };
+
+const clamp01 = (v) => Math.min(1, Math.max(0, v));
+const insideShape = (it, x, y) => inside(it.pts, x, y) && !it.holes.some((h) => inside(h, x, y));
 
 function inside(pts, x, y) {
   let hit = false;
@@ -109,10 +115,12 @@ function doodle(el) {
     items.forEach((it, n) => {
       if (it.kind !== 'fill') return;
       ctx.beginPath();
-      it.pts.forEach(([x, y], i) => { const px = x + ox + j(n * 40 + i, .3), py = y + oy + j(n * 40 + i + 20, .3); i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); });
-      ctx.closePath();
+      [it.pts, ...it.holes].forEach((poly, h) => {
+        poly.forEach(([x, y], i) => { const px = x + ox + j(n * 40 + h * 7 + i, .3), py = y + oy + j(n * 40 + h * 7 + i + 20, .3); i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); });
+        ctx.closePath();
+      });
       ctx.fillStyle = PAL[it.tint];
-      ctx.fill();
+      ctx.fill('evenodd');
     });
     ctx.globalAlpha = 1;
     // the crayon: short vertical strokes filling each shape, a fresh set every drawing
@@ -125,8 +133,8 @@ function doodle(el) {
       ctx.beginPath();
       for (let y = HY * .5; y < SIZE; y += HY) {
         for (let x = HX * .5 + (Math.floor(y / HY) % 2) * HX * .5; x < SIZE; x += HX) {
-          if (!inside(it.pts, x, y)) continue;
-          if (fills.some((o) => o.n > n && inside(o.pts, x, y))) continue;   // a shape drawn on top owns this spot
+          if (!insideShape(it, x, y)) continue;                     // letters and the cat stay bare paper
+          if (fills.some((o) => o.n > n && insideShape(o, x, y))) continue;   // a shape drawn on top owns this spot
           const r = hash(Math.round(x * 10), Math.round(y * 10), f * 7 + n);
           if (r < .12) continue;                                  // paper showing through
           const len = HY * (.45 + r * .55), dx = (hash(n, Math.round(x * 10), f) - .5) * .7, dy = (r - .5) * 1.2;

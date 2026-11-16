@@ -20,21 +20,27 @@ The clouds are real 3D clouds, rendered the way the Seed Data landing diorama re
 
 Slow devices lower the scene resolution once. Reduced-motion visitors get a still sky, and the pointer trail still works for them.
 
-## Meadow
+## Ground and meadow
 
-A strip of crayon-drawn ASCII grass and flowers grows on the page's horizon, the soft top edge of the content panel (`src/meadow.js`). It is drawn by the sky's own glyph pass, in the same 8×12 tiles as the clouds, from a small texture the module fills each frame.
+The page has a floor. The sky sits at the top, and at the very bottom the sky's tiles come back as pale green ground (`src/ground.js`), deepening downward with soft patches and a gently rolling top edge. A strip of crayon-drawn ASCII grass and flowers grows along it (`src/meadow.js`), in the same 8×12 tiles as the clouds.
 
 The flowers bloom where it rains:
 
-- **Rain:** click or tap the sky and rain falls from there. Hold to keep it raining, and drag to move the shower. Every so often a light shower passes by itself.
-- **Bloom:** watered flowers open over about a second (daisies, tulips, lupins and forget-me-nots), stay open for a while, then close back into buds.
-- **Brush:** moving the pointer through the meadow bends the grass and makes the flowers lean.
+- **Rain from the sky:** click or tap the sky and rain falls from there. Hold to keep it raining, and drag to move the shower. The rain melts into the page, and a moment later a little cloud gathers over the same spot above the meadow and rains on the flowers below.
+- **Rain clouds at the meadow:** rain down here always comes from a cloud, drawn the way the sky draws its clouds and carrying a small patch of sky with it. Tap the space above the grass to call one (hold and drag to lead it), and every so often one drifts over by itself.
+- **Bloom:** watered flowers (daisies, tulips, lupins and forget-me-nots) open over about a second, stay open for a while, then close back into buds. Moving the pointer through the meadow bends the grass and makes the flowers lean.
 
-The look comes from risograph crayon drawings. Fills are hatched with short vertical strokes (`| ! : ;`) over a pastel layer printed slightly out of register, with waxy grain and rounded edges. Everything redraws about eight times a second ("on twos"), so the drawing boils like hand-drawn animation. The palette lives in `src/crayon.js` and is shared with the doodles.
+The look comes from risograph crayon drawings. Fills are hatched with short vertical strokes (`| ! : ;`) over a pastel layer printed slightly out of register, with waxy grain and rounded edges. Everything redraws about eight times a second ("on twos"), so the drawing boils like hand-drawn animation. The palette lives in `src/crayon.js` and is shared with the doodles. The ground only draws while it's on screen.
 
-## Doodles
+## Links
 
-Each collection has a small crayon drawing beside it (`src/doodles.js`): a pot of flowers for Blog, a vase for Projects, a single flower for Notes. At rest a drawing boils slowly. Hovering its row, focusing its link or tapping it brings it to life: the colour layer slides into register, the bouquet lifts, a stem grows out of the vase, and the flower opens. Off-screen doodles don't redraw.
+The links (Resume, GitHub, LinkedIn) each have a crayon rendition of their icon beside them (`src/doodles.js`), drawn in the same crayon language:
+
+- **Resume:** a sheet with a photo and lines of text.
+- **GitHub:** the Octocat mark.
+- **LinkedIn:** the rounded "in" square.
+
+The Octocat and the letters are bare paper left inside the hatched fill. At rest an icon boils slowly. Hovering its row, focusing its link or tapping it brings it to life: the colour layer slides into register, the resume writes itself out over a second page, the Octocat perks its ears and lifts its tail, and the dot on the "i" hops. Off-screen icons don't redraw.
 
 Reduced-motion visitors get still drawings with no boil, and tapping the sky waters the flowers without animated rain.
 

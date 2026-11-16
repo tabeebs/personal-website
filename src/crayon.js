@@ -25,8 +25,10 @@ export const PAL = [
   '#3c7fd0', // 12 rain
   '#d8689c', // 13 pink
   '#f6bfd6', // 14 pink pastel
+  '#2f6cbc', // 15 blue
+  '#86ace6', // 16 blue, softer
 ];
-export const C = { navy: 1, mustard: 2, teal: 3, lilac: 4, tomato: 5, grass: 6, mustardP: 7, tealP: 8, lilacP: 9, tomatoP: 10, grassP: 11, rain: 12, pink: 13, pinkP: 14 };
+export const C = { navy: 1, mustard: 2, teal: 3, lilac: 4, tomato: 5, grass: 6, mustardP: 7, tealP: 8, lilacP: 9, tomatoP: 10, grassP: 11, rain: 12, pink: 13, pinkP: 14, blue: 15, blueP: 16 };
 
 // Hand-drawn animation runs on twos: about 8 drawings a second.
 export const BOIL_MS = 125;
