@@ -79,7 +79,7 @@ function buildClouds(scene) {
 // cyan tiles with white seams, drifting patches of deeper blue, a small dot per tile (a heavier square in the
 // deep patches), and clouds as clean white tiles outlined in ( ) ; : ~ glyphs, heavier o 8 in their shaded undersides.
 const CW = 8, CH = 12;                       // glyph cell in css px, as in the reference
-const CARD_PAD_X = 64, CARD_PAD_TOP = 40, CARD_PAD_BOTTOM = 34;   // the soft white panel reaches this far past the content
+const CARD_PAD_X = 64, CARD_PAD_TOP = 28, CARD_PAD_BOTTOM = 34;   // the soft white panel reaches this far past the content
 const palGlsl = `const vec3 PAL[${PAL.length}] = vec3[${PAL.length}](${PAL.map((h) => `vec3(${[1, 3, 5].map((i) => (parseInt(h.slice(i, i + 2), 16) / 255).toFixed(4)).join(',')})`).join(',')});`;
 const asciiFrag = /* glsl */`
 precision highp float;

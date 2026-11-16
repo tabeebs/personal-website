@@ -21,7 +21,7 @@ html, body {
    along the bottom, so rain from a clicked cloud can be watched all the way down to the flowers it waters.
    (On a screen too short for it all, the page grows and scrolls rather than overlap.) */
 :root {
-  --sky: clamp(88px, 21vh, 260px);        /* sky above the panel's content */
+  --sky: clamp(76px, 18.5vh, 236px);      /* sky above the panel's content */
   --ground: clamp(156px, 24vh, 260px);    /* height of the ground band */
 }
 body {
@@ -75,7 +75,7 @@ html.playing, html.playing * { -webkit-user-select: none; user-select: none; }
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  margin-bottom: 40px;
+  margin-bottom: 14px;
 }
 .brand { font-size: 19px; text-decoration: none; }
 
@@ -83,7 +83,7 @@ html.playing, html.playing * { -webkit-user-select: none; user-select: none; }
 .intro p { margin: 0 0 20px; }
 .intro a { font-weight: 500; text-underline-offset: 3px; }
 
-.collections { margin-top: 36px; }
+.collections { margin-top: 30px; }
 .collections ul { list-style: none; padding: 0; margin: 0; }
 /* each row is one link: icon, name, then a leader line that fills in on hover */
 .collections li { font-size: 14px; }
