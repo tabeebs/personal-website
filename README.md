@@ -1,22 +1,31 @@
 # website v1
 
-Personal website, built from scratch as plain HTML, CSS and JavaScript (no build step).
+Personal website. Plain HTML and CSS, plus one bundled script for the sky.
 
 ## Sky
 
-The page header is an animated ASCII sky drawn with WebGL2 (`sky.js`). It works the same way as the Seed Data diorama: render a real image first, then turn it into ASCII.
+The header is a live Three.js sky drawn as coloured monospace glyphs. It uses the same pipeline as the Seed Data landing diorama (`SeedData/app/landing/main.js`):
 
-1. **Scene pass:** a lit sky, rendered at two texels per character cell. Cumulus clouds come from domain-warped fbm noise, with two layers drifting right at different speeds. Light is marched toward the sun, so cloud tops are bright white and the undersides fall into blue-grey shadow.
-2. **ASCII pass:** for every 8×12px cell, it samples the scene colour and picks a glyph from the cell's brightness (`. : ~ o O`), using edge direction (`| \ - /`) along strong cloud edges. The glyph is inked in a darker shade of the cell's own colour, so the picture stays photographic.
-3. **Cursor wind:** moving the pointer stamps `- \ | /` characters in the direction of motion, and they fade out.
-4. **Fade and panel:** the sky melts into the page toward the bottom, and a soft white panel with a wavering top edge sits behind the content.
+1. **Scene:** a sky dome, plus cumulus clouds built as clusters of lit puffs. They are lit by a warm sun and a hemisphere light, with soft self-shadows and fog toward the horizon, and they drift east. The scene renders at about 3.2 px per glyph cell into a half-float target, and the alpha channel stores each pixel's material class.
+2. **Glyph pass:** each cell reads its averaged colour and class. Open sky gets `. : + *` by brightness, and clouds use the diorama's smoke and dust ramp `. : o O`. Each glyph is inked at `col*1.24` over a dimmed blur of the scene, which is exactly what the diorama does.
+3. **Tilt shift:** the diorama's blur pass softens the top and bottom of the frame.
+4. **Pointer wind:** moving the cursor leaves a short trail of `— / | \` strokes in the direction of travel.
 
-Add `?scene` to the URL to see the lit sky before the ASCII pass, which is handy when tuning clouds. With `prefers-reduced-motion`, the sky is still and only the cursor trail moves.
+The paper panel uses the diorama page's torn-edge SVG filter. Slow devices lower the scene resolution once. Reduced-motion visitors get a still sky, and the pointer trail still works for them. Without WebGL 2 the header falls back to a plain sky gradient.
+
+## Change it
+
+```bash
+npm install
+npm run build
+```
+
+Edit `src/sky.js`, then run the build. `build/sky.js` is committed, because the site itself has no build step. Add `?debug` to the URL to expose the renderer on `window.__sky`.
 
 ## Run locally
 
 ```bash
-python -m http.server 5173
+npm start
 ```
 
 Then open http://localhost:5173.

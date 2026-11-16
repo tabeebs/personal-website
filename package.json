@@ -1,0 +1,13 @@
+{
+  "name": "website-v1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "python -m http.server 5173",
+    "build": "esbuild src/sky.js --bundle --format=esm --minify --legal-comments=none --outfile=build/sky.js"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "three": "0.187.0"
+  }
+}

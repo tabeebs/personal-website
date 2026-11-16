@@ -15,35 +15,24 @@ html, body {
   font-size: 15px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 
-/* The sky sits behind the page and scrolls away with it. */
-#sky {
-  position: absolute;
-  inset: 0 0 auto 0;
-  width: 100%;
-  height: 100vh;
-  display: block;
-  z-index: 0;
-  pointer-events: none;
-}
+/* The sky fills the top of the page; the paper panel tears across its bottom edge. */
+.stage { position: relative; height: 64vh; min-height: 380px; overflow: hidden; background: #0b2a4a; }
+#sky { position: absolute; inset: 0; width: 100%; height: 100%; display: block; opacity: 0; transition: opacity .6s ease; }
+#sky.ready { opacity: 1; }
+/* No WebGL 2: a quiet sky-coloured backdrop instead of a blank band. */
+.sky-failed .stage { background: linear-gradient(180deg, #1d6cc8 0%, #6aa9de 60%, #b8daf3 100%); }
 
-#content {
-  position: relative;
-  z-index: 1;
-  max-width: 628px;
-  margin: 0 auto;
-  padding: 390px 16px 120px;
-}
+.panel { position: relative; z-index: 1; isolation: isolate; margin-top: -44px; padding: 64px 16px 120px; }
+/* torn paper edge facing the sky */
+.panel::before { content: ""; position: absolute; inset: 0 -24px -24px -24px; z-index: -1; background: var(--bg); filter: url(#torn); }
+.inner { max-width: 628px; margin: 0 auto; }
 
 a { color: inherit; }
 
-.top {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 56px;
-}
+.top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 48px; }
 .brand { font-size: 19px; text-decoration: none; }
 
 .who { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; }
@@ -66,5 +55,5 @@ a { color: inherit; }
 .rule { flex: 1; height: 1px; background: var(--rule); }
 
 @media (max-width: 700px) {
-  #content { padding-top: 300px; }
+  .stage { height: 52vh; min-height: 300px; }
 }
