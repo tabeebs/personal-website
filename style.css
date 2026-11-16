@@ -64,6 +64,13 @@ body {
 
 a { color: inherit; }
 
+/* Selected text takes the crayon palette: a mustard highlight with navy ink. */
+::selection { background: #f4d27c; color: #2d3a68; }
+
+/* While a press that began outside the text plays with the rain (src/sky.js), dragging across the panel
+   doesn't select anything. */
+html.playing, html.playing * { -webkit-user-select: none; user-select: none; }
+
 .top {
   display: flex;
   justify-content: space-between;

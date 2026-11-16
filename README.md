@@ -24,6 +24,8 @@ Slow devices lower the scene resolution once. Reduced-motion visitors get a stil
 
 The page is one screen with no scrolling. The sky fills it from behind, the panel floats in the middle as a card with wavering top and bottom edges, and the ground runs along the bottom, so rain from a clicked cloud can be watched all the way down to the flowers it waters. The panel is a little see-through, like frosted glass, so the sky and the rain show faintly behind it. The sky gap and the ground's height scale with the window (`--sky` and `--ground` in `style.css`). On a screen too short for it all, the page grows and scrolls rather than overlap.
 
+A drag that starts outside the text plays with the rain and doesn't select anything, even as it crosses the panel. A drag that starts on the text selects it as usual, in a mustard highlight with navy ink.
+
 ## Ground and meadow
 
 Along the bottom, the sky's tiles come back as pale green ground (`src/ground.js`), deepening downward with soft patches and a gently rolling top edge. A strip of crayon-drawn ASCII grass and flowers grows along it (`src/meadow.js`), in the same 8×12 tiles as the clouds. The ground is see-through above the grass, so rain shows falling through it.

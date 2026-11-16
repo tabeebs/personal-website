@@ -307,12 +307,17 @@ async function main() {
     if (press.down) { press.x = x; press.y = Math.min(y, grassY() - 60); }
   }, { passive: true });
   document.addEventListener('mouseleave', () => { lastP = null; press.down = false; });
-  addEventListener('pointerup', () => { press.down = false; });
-  addEventListener('pointercancel', () => { press.down = false; });
-  addEventListener('blur', () => { press.down = false; });
+  // while playing with the rain, the page's text can't be selected; pressing on the text itself selects as usual
+  const stopPlaying = () => { press.down = false; document.documentElement.classList.remove('playing'); };
+  addEventListener('pointerup', stopPlaying);
+  addEventListener('pointercancel', stopPlaying);
+  addEventListener('blur', stopPlaying);
   addEventListener('pointerdown', (e) => {
     const b = canvas.getBoundingClientRect(), x = e.clientX - b.left, y = e.clientY - b.top;
     if (y > b.height || e.target.closest('a, button')) return;
+    if (e.target.closest('p, .name, .role, h1, h2, h3')) return;   // a press on the text selects it, as usual
+    document.documentElement.classList.add('playing');
+    getSelection()?.removeAllRanges();
     if (y < grassY() - 60) {   // rain falls from where the sky was clicked
       if (still) ground?.land(e.clientX);
       else { rain.burst(x, y, performance.now() / 1000); Object.assign(press, { down: true, x, y, acc: 0 }); }
