@@ -17,12 +17,18 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* The page is a column: sky behind the top, content, then the ground as the floor at the very bottom. */
+/* The page is a column: sky behind the top, content, then the ground as the floor at the very bottom.
+   It is one screen plus the sky above the panel, so at the top the whole panel shows under the clouds, and
+   scrolled to the bottom the clouds have gone but the panel still shows, sitting over the ground. */
+:root {
+  --sky: clamp(150px, 27vh, 300px);       /* sky above the panel's content */
+  --ground: clamp(230px, 28vh, 300px);    /* height of the ground band */
+}
 body {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
-  min-height: 100dvh;
+  min-height: calc(100vh + var(--sky) - 32px);
+  min-height: calc(100dvh + var(--sky) - 32px);
 }
 
 /* The sky sits behind the page and scrolls away with it. */
@@ -42,14 +48,15 @@ body {
   width: 100%;
   max-width: 628px;
   margin: 0 auto;
-  padding: 300px 16px 56px;
+  padding: var(--sky) 16px 32px;
+  flex: none;
 }
 
 /* The ground (src/ground.js): pale green tiles with the crayon meadow growing on top. */
 #ground {
   display: block;
   width: 100%;
-  height: 300px;
+  height: var(--ground);
   margin-top: auto;
   flex: none;
 }
@@ -60,11 +67,11 @@ a { color: inherit; }
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  margin-bottom: 56px;
+  margin-bottom: 40px;
 }
 .brand { font-size: 19px; text-decoration: none; }
 
-.who { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; }
+.who { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
 .avatar {
   width: 40px; height: 40px; border-radius: 50%;
   background: radial-gradient(circle at 35% 30%, #d9d9d9, #8f8f8f 70%, #6d6d6d);
@@ -72,30 +79,25 @@ a { color: inherit; }
 .name { font-size: 14px; line-height: 1.3; }
 .role { font-size: 12.5px; color: var(--muted); line-height: 1.3; }
 
-.intro p { margin: 0 0 24px; }
+.intro p { margin: 0 0 20px; }
 .intro a { font-weight: 500; text-underline-offset: 3px; }
 
-.collections { margin-top: 56px; }
-.collections h2 { font-size: 13px; font-weight: 400; color: var(--muted); margin: 0 0 14px; }
+.collections { margin-top: 36px; }
 .collections ul { list-style: none; padding: 0; margin: 0; }
-.collections li { display: flex; align-items: center; gap: 12px; font-size: 13.5px; padding: 6px 0; }
+.collections li { display: flex; align-items: center; gap: 14px; font-size: 14px; padding: 5px 0; }
 .collections li a { text-decoration: none; }
 
-/* Crayon doodles beside each collection (src/doodles.js). They tip and lift a little on hover. */
+/* Crayon icons beside each link (src/doodles.js). They tip and lift a little on hover. */
 .doodle {
   flex: none;
-  width: 36px; height: 36px;
-  margin: -4px 0 -4px -2px;
+  width: 44px; height: 44px;
+  margin: -3px 0 -3px -4px;
   transform-origin: 50% 90%;
   transition: transform .45s cubic-bezier(.3, 1.7, .45, 1);
 }
-.doodle canvas { display: block; width: 36px; height: 36px; }
+.doodle canvas { display: block; width: 44px; height: 44px; }
 .collections li:hover .doodle,
 .collections li:focus-within .doodle { transform: translateY(-2px) rotate(-5deg); }
 @media (prefers-reduced-motion: reduce) { .doodle { transition: none; } }
-.collections li span:last-child { color: var(--muted); }
 .rule { flex: 1; height: 1px; background: var(--rule); }
 
-@media (max-width: 700px) {
-  #content { padding-top: 236px; }
-}

@@ -7,7 +7,7 @@ import { buildAtlas, gg } from './atlas.js';
 import { createMeadow, MROWS } from './meadow.js';
 
 const CW = 8, CH = 12;          // the sky's glyph cell
-const BASE = 19;                // the grass row; flowers grow in the rows above it, ground tiles fill those below
+const SOIL = 6;                 // ground-tile rows under the grass row; the meadow and its clouds fill the rows above
 const NCLOUD = 3;               // rain clouds over the meadow at once
 
 const palGlsl = `const vec3 PAL[${PAL.length}] = vec3[${PAL.length}](${PAL.map((h) => `vec3(${[1, 3, 5].map((i) => (parseInt(h.slice(i, i + 2), 16) / 255).toFixed(4)).join(',')})`).join(',')});`;
@@ -165,7 +165,7 @@ export function createGround(canvas, { reduced = false, debug = false } = {}) {
   const mat = new THREE.RawShaderMaterial({ glslVersion: THREE.GLSL3, vertexShader: vtx, fragmentShader: frag, depthTest: false, depthWrite: false,
     uniforms: { uAtlas: { value: buildAtlas() }, uMeadow: { value: null }, uRain: { value: null }, uView: { value: new THREE.Vector2(1, 1) },
       uCell: { value: new THREE.Vector2(CW, CH) }, uGrid: { value: new THREE.Vector2(1, 1) }, uN: { value: GLYPHS.length }, uTime: { value: 0 },
-      uMeadowInfo: { value: new THREE.Vector4(BASE, MROWS, 0, 1) },
+      uMeadowInfo: { value: new THREE.Vector4(0, MROWS, 0, 1) },
       uClouds: { value: Array.from({ length: NCLOUD }, () => new THREE.Vector4(0, 0, 1, 0)) } } });
   const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat); quad.frustumCulled = false;
   const scene = new THREE.Scene(); scene.add(quad); const cam = new THREE.Camera();
@@ -185,7 +185,10 @@ export function createGround(canvas, { reduced = false, debug = false } = {}) {
       mat.uniforms.uMeadow.value = meadowTex; mat.uniforms.uRain.value = rainTex;
     }
     // the meadow runs the full width, a little past each edge so it never tapers on screen
-    meadow.setGround(BASE, -48, W + 48);
+    // the grass row sits SOIL rows from the bottom, whatever height the page gives the ground
+    const base = Math.max(MROWS + 4, rows - SOIL);
+    mat.uniforms.uMeadowInfo.value.x = base;
+    meadow.setGround(base, -48, W + 48);
   }
   resize();
   new ResizeObserver(() => resize()).observe(canvas);

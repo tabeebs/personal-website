@@ -20,6 +20,10 @@ The clouds are real 3D clouds, rendered the way the Seed Data landing diorama re
 
 Slow devices lower the scene resolution once. Reduced-motion visitors get a still sky, and the pointer trail still works for them.
 
+## Layout
+
+The page is one screen tall plus the sky above the panel. At the top, the whole panel shows under the clouds. Scrolled to the bottom, the clouds have scrolled away but the panel still shows in full, sitting over the ground. The sky gap and the ground's height scale with the window (`--sky` and `--ground` in `style.css`).
+
 ## Ground and meadow
 
 The page has a floor. The sky sits at the top, and at the very bottom the sky's tiles come back as pale green ground (`src/ground.js`), deepening downward with soft patches and a gently rolling top edge. A strip of crayon-drawn ASCII grass and flowers grows along it (`src/meadow.js`), in the same 8×12 tiles as the clouds.
@@ -34,7 +38,7 @@ The look comes from risograph crayon drawings. Fills are hatched with short vert
 
 ## Links
 
-The links (Resume, GitHub, LinkedIn) each have a crayon rendition of their icon beside them (`src/doodles.js`), drawn in the same crayon language:
+The links (GitHub, Resume, LinkedIn) each have a crayon rendition of their icon beside them (`src/doodles.js`), drawn in the same crayon language:
 
 - **Resume:** a sheet with a photo and lines of text.
 - **GitHub:** the Octocat mark.

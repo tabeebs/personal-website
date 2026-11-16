@@ -7,7 +7,8 @@
 // Octocat perks its ears and lifts its tail, the dot on the LinkedIn i hops.
 import { PAL, C, BOIL_MS, hash } from './crayon.js';
 
-const SIZE = 36;                         // css px, drawings are authored in this space
+const SIZE = 36;                         // drawings are authored in this space
+const SHOWN = 44;                        // and shown this big, in css px
 const HX = 2.4, HY = 3.6;                // hatch cell, css px
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -97,7 +98,7 @@ function doodle(el) {
   let dpr = 1;
   const size = () => {
     dpr = Math.min(devicePixelRatio || 1, 3);
-    canvas.width = canvas.height = Math.round(SIZE * dpr);
+    canvas.width = canvas.height = Math.round(SHOWN * dpr);
   };
   size();
 
@@ -105,7 +106,8 @@ function doodle(el) {
 
   function paint() {
     const f = frame, j = (k, a = .35) => (hash(f, k, 31) - .5) * 2 * a;   // per-drawing jitter
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const k = dpr * SHOWN / SIZE;
+    ctx.setTransform(k, 0, 0, k, 0, 0);
     ctx.clearRect(0, 0, SIZE, SIZE);
     const items = draw(t);
     // the colour layer, printed out of register; it slides into place as the drawing comes alive
