@@ -64,7 +64,7 @@ void main(){
   float mk = uMeadowInfo.x - cell.y;
   if(mk >= -1. && mk < uMeadowInfo.y + 1.){
     float boil = uMeadowInfo.z;
-    vec2 off = vec2(1.8, 1.3) + (vec2(h21(vec2(boil,3.1)), h21(vec2(boil,9.7))) - .5)*1.3;
+    vec2 off = vec2(1.8, 1.3) + (vec2(h21(vec2(boil,3.1)), h21(vec2(boil,9.7))) - .5)*.85;
     vec2 pf = px - off, cf = floor(pf/uCell);
     float kf = uMeadowInfo.x - cf.y;
     if(kf >= 0. && kf < uMeadowInfo.y && cf.x >= 0. && cf.x < uGrid.x){
@@ -78,7 +78,7 @@ void main(){
         vec2 q = pf/uCell - cf;                                    // 0..1 inside the cell, y down
         vec2 e = vec2(q.x < .5 ? (nl > 0. ? 0. : .5-q.x) : (nr > 0. ? 0. : q.x-.5),
                       q.y < .5 ? (nu > 0. ? 0. : .5-q.y) : (nd > 0. ? 0. : q.y-.5)) * 2.;
-        float wob = (h21(floor(pf/2.) + boil*.53) - .5)*.22;
+        float wob = (h21(floor(pf/2.) + boil*.53) - .5)*.15;
         float blobM = 1. - smoothstep(.86, 1.02, length(e) + wob);
         // waxy vertical streaks, with paper showing through between them
         float sx = floor(pf.x/1.6);
@@ -93,7 +93,7 @@ void main(){
         float code = floor(m.r*255.+.5), hb = h21(cell + boil*1.731);
         // hatch cells pick a fresh crayon stroke every drawing
         float mg = code > 254.5 ? (hb<.4?${gg('|')}:hb<.65?${gg('!')}:hb<.82?${gg(':')}:hb<.93?${gg(';')}:${gg("'")}) : code;
-        vec2 jg = gv + (vec2(h21(cell+boil*.91), h21(cell.yx+boil*1.37))-.5)*vec2(.18,.1);
+        vec2 jg = gv + (vec2(h21(cell+boil*.91), h21(cell.yx+boil*1.37))-.5)*vec2(.12,.065);
         OVER(PAL[int(floor(m.g*255.+.5))], glyph(mg, jg, gdx, gdy, 1.)*m.a);
       }
     }
