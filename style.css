@@ -21,7 +21,7 @@ html, body {
    along the bottom, so rain from a clicked cloud can be watched all the way down to the flowers it waters.
    (On a screen too short for it all, the page grows and scrolls rather than overlap.) */
 :root {
-  --sky: clamp(80px, 18vh, 240px);        /* sky above the panel's content */
+  --sky: clamp(88px, 21vh, 260px);        /* sky above the panel's content */
   --ground: clamp(156px, 24vh, 260px);    /* height of the ground band */
 }
 body {

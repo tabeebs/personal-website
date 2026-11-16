@@ -22,7 +22,7 @@ Slow devices lower the scene resolution once. Reduced-motion visitors get a stil
 
 ## Layout
 
-The page is one screen with no scrolling. The sky fills it from behind, the panel sits in the middle, and the ground runs along the bottom, so rain from a clicked cloud can be watched all the way down to the flowers it waters. The panel is a little see-through, like frosted glass, so the sky and the rain show faintly behind it. The sky gap and the ground's height scale with the window (`--sky` and `--ground` in `style.css`). On a screen too short for it all, the page grows and scrolls rather than overlap.
+The page is one screen with no scrolling. The sky fills it from behind, the panel floats in the middle as a card with wavering top and bottom edges, and the ground runs along the bottom, so rain from a clicked cloud can be watched all the way down to the flowers it waters. The panel is a little see-through, like frosted glass, so the sky and the rain show faintly behind it. The sky gap and the ground's height scale with the window (`--sky` and `--ground` in `style.css`). On a screen too short for it all, the page grows and scrolls rather than overlap.
 
 ## Ground and meadow
 

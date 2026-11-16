@@ -79,11 +79,11 @@ function buildClouds(scene) {
 // cyan tiles with white seams, drifting patches of deeper blue, a small dot per tile (a heavier square in the
 // deep patches), and clouds as clean white tiles outlined in ( ) ; : ~ glyphs, heavier o 8 in their shaded undersides.
 const CW = 8, CH = 12;                       // glyph cell in css px, as in the reference
-const CARD_PAD_X = 64, CARD_PAD_TOP = 56;    // the soft white panel reaches this far past the text column
+const CARD_PAD_X = 64, CARD_PAD_TOP = 40, CARD_PAD_BOTTOM = 34;   // the soft white panel reaches this far past the content
 const palGlsl = `const vec3 PAL[${PAL.length}] = vec3[${PAL.length}](${PAL.map((h) => `vec3(${[1, 3, 5].map((i) => (parseInt(h.slice(i, i + 2), 16) / 255).toFixed(4)).join(',')})`).join(',')});`;
 const asciiFrag = /* glsl */`
 precision highp float;
-uniform sampler2D uScene, uAtlas, uWind; uniform vec2 uView, uCell, uGrid; uniform float uTime, uN; uniform vec3 uCard;
+uniform sampler2D uScene, uAtlas, uWind; uniform vec2 uView, uCell, uGrid; uniform float uTime, uN; uniform vec4 uCard;
 in vec2 vUv; out vec4 outColor;
 float h21(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
 float vn(vec2 p){ vec2 i=floor(p),f=fract(p); f=f*f*(3.-2.*f); return mix(mix(h21(i),h21(i+vec2(1,0)),f.x),mix(h21(i+vec2(0,1)),h21(i+vec2(1,1)),f.x),f.y); }
@@ -176,15 +176,17 @@ void main(){
   vec2 cp = gv*uCell;
   c = mix(c, vec3(1.), max(step(uCell.x-1., cp.x), step(uCell.y-1., cp.y))*.8);
 
-  // melt into the page toward the bottom
-  c = mix(c, BG, smoothstep(.36, .8, vy));
+  // melt into the page toward the bottom, where the meadow grows
+  c = mix(c, BG, smoothstep(.4, .92, vy));
 
   // soft panel behind the content, its top edge wavering like a cloud bank; a little see-through, like frosted
   // glass, so the sky and the rain show faintly behind it
   float panel = 0.;
   if(uCard.y > -9000.){
     float wob = (fbm(vec2(px.x/70. - uTime*.05, 3.3)) - .5)*18. + (vn(vec2(px.x/16. + uTime*.1, 8.1)) - .5)*6.;
-    float d = max(max(uCard.x - px.x, px.x - uCard.z), (uCard.y + wob) - px.y);
+    // and its bottom edge wavers too, so it floats as a card between the clouds and the meadow
+    float wobB = (fbm(vec2(px.x/70. + uTime*.04, 7.9)) - .5)*14. + (vn(vec2(px.x/16. - uTime*.08, 2.4)) - .5)*5.;
+    float d = max(max(uCard.x - px.x, px.x - uCard.z), max((uCard.y + wob) - px.y, px.y - (uCard.w + wobB)));
     panel = smoothstep(14., -12., d);
     c = mix(c, BG, panel*.88);
   }
@@ -235,7 +237,7 @@ async function main() {
   const vtx = `in vec3 position; in vec2 uv; out vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy,0.,1.); }`;
   const ascii = new THREE.RawShaderMaterial({ glslVersion: THREE.GLSL3, vertexShader: vtx, fragmentShader: asciiFrag, depthTest: false, depthWrite: false,
     uniforms: { uScene: { value: rt.texture }, uAtlas: { value: buildAtlas() }, uWind: { value: windTex }, uView: { value: new THREE.Vector2(1, 1) },
-      uCell: { value: new THREE.Vector2(CW, CH) }, uGrid: { value: new THREE.Vector2(1, 1) }, uTime: time, uN: { value: GLYPHS.length }, uCard: { value: new THREE.Vector3(0, -10000, 0) } } });
+      uCell: { value: new THREE.Vector2(CW, CH) }, uGrid: { value: new THREE.Vector2(1, 1) }, uTime: time, uN: { value: GLYPHS.length }, uCard: { value: new THREE.Vector4(0, -10000, 0, 0) } } });
   const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), ascii); quad.frustumCulled = false;
   const post = new THREE.Scene(); post.add(quad); const postCam = new THREE.Camera();
 
@@ -374,7 +376,8 @@ async function main() {
     const data = windTex.image.data, fade = Math.exp(-(realDt || .016) * 4.2);
     if (content) {
       const sr = canvas.getBoundingClientRect(), inner = (content.firstElementChild || content).getBoundingClientRect();
-      ascii.uniforms.uCard.value.set(inner.left - sr.left - CARD_PAD_X, inner.top - sr.top - CARD_PAD_TOP, inner.right - sr.left + CARD_PAD_X);
+      const last = (content.lastElementChild || content).getBoundingClientRect();
+      ascii.uniforms.uCard.value.set(inner.left - sr.left - CARD_PAD_X, inner.top - sr.top - CARD_PAD_TOP, inner.right - sr.left + CARD_PAD_X, last.bottom - sr.top + CARD_PAD_BOTTOM);
     }
     const now = performance.now() / 1000, rdt = realDt || .016;
     if (press.down) { press.acc += rdt * 26; while (press.acc >= 1) { press.acc -= 1; rain.drop(press.x + (Math.random() * 2 - 1) * 26, press.y + Math.random() * 10, now); } }
