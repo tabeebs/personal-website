@@ -15,6 +15,7 @@ const HX = 2.4, HY = 3.6;                // hatch cell, css px
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const lerp = (a, b, t) => a + (b - a) * t;
 const ease = (t) => 1 - Math.pow(1 - t, 3);
+const backOut = (t) => 1 + 2.7 * Math.pow(t - 1, 3) + 1.7 * Math.pow(t - 1, 2);   // overshoots a little, then settles
 
 // ---- shapes ----
 const circle = (cx, cy, r, n = 9) => Array.from({ length: n }, (_, i) => [cx + Math.cos(i / n * Math.PI * 2) * r, cy + Math.sin(i / n * Math.PI * 2) * r]);
@@ -66,16 +67,24 @@ const DRAWINGS = {
     ];
   },
   // LinkedIn: the rounded square with "in" left as bare paper; the dot on the i hops
+  // on hover the dot of the i pops up as a mustard blob and a little notification badge pops onto the corner
   linkedin(t) {
-    const g = ease(t), hop = Math.sin(g * Math.PI) * 1.6 + g * .4;
+    const g = ease(t), popped = g > .2;
     const holes = [
       rect(10.4, 15.4, 14.2, 26.6),
-      circle(12.3, 11.4 - hop, 2.2, 8),
       [[16.4, 26.6], [16.4, 15.4], [20, 15.4], [20, 17], [21.5, 15.6], [23.6, 15.2], [25.6, 16], [26.7, 18.2], [26.8, 26.6], [23.2, 26.6],
         [23.2, 20.3], [22.6, 19.1], [21.3, 19.1], [20.3, 20], [20.1, 26.6]],
     ];
+    if (!popped) holes.push(circle(12.3, 11.4, 2.2, 8));
     const sq = roundRect(5.5, 5.5, 30.5, 30.5, 4.6);
-    return [fill(sq, C.blue, C.blueP, holes), line(sq.concat([sq[0]]), C.navy, 1)];
+    const out = [fill(sq, C.blue, C.blueP, holes), line(sq.concat([sq[0]]), C.navy, 1)];
+    if (popped) {
+      const dot = circle(12.3, 11.6 - 3 * g, 2.5 + .8 * g, 10);
+      out.push(fill(dot, C.mustard, C.mustardP), line(dot.concat([dot[0]]), C.navy, 1));
+    }
+    const b = backOut(clamp01((g - .3) / .7));
+    if (b > .02) out.push(fill(circle(29.2, 6.8, 4.4 * b, 12), C.tomato, C.tomatoP));
+    return out;
   },
 };
 
