@@ -53,12 +53,13 @@ function buildClouds(scene) {
     const el = THREE.MathUtils.degToRad(4 + (1 - Math.pow(rnd(), 1.5)) * 64), d = 190 + rnd() * 520;
     const z = -d * Math.cos(el), lim = d * 1.05 + 90;
     const w = (34 + rnd() * 62) * Math.pow(d / 420, .6), base = d * Math.sin(el);
-    const c = { x: (rnd() * 2 - 1) * lim, y: base, y0: base, z, lim, vx: 0, vy: 0, first: puffs.length, n: Math.round(16 + w * .9) };
+    const c = { x: (rnd() * 2 - 1) * lim, y: base, y0: base, z, lim, hx: 0, ox: 0, oy: 0, tx: 0, ty: 0, first: puffs.length, n: Math.round(16 + w * .9) };
     for (let p = 0; p < c.n; p++) {
       const u = rnd() * 2 - 1, prof = 1 - u * u;
       const r = (2.4 + rnd() * 3.4) * (.5 + .7 * prof) * Math.sqrt(w / 26);
       puffs.push({ c: field.length, dx: u * w * .5, dy: r * .5 + rnd() * prof * w * .32, dz: (rnd() * 2 - 1) * w * .24 * prof, r });
     }
+    c.hx = c.x;
     field.push(c);
   }
   const mat = tag(new THREE.MeshLambertMaterial({ color: '#ffffff' }), CLS.cloud);
@@ -103,7 +104,9 @@ const vec3 TOP   = vec3(160.,212.,238.)/255.;   // typical tile up high
 const vec3 DEEP  = vec3(103.,179.,215.)/255.;   // the deep patches
 const vec3 LOW   = vec3(228.,240.,246.)/255.;   // pale, lower down
 const vec3 CLOUD = vec3(252.,252.,253.)/255.;
-const vec3 INK   = vec3(108.,118.,132.)/255.;   // cloud glyphs
+const vec3 INK   = vec3(108.,118.,132.)/255.;
+const vec3 OUTLINE = vec3(146.,156.,170.)/255.; // the fine grey cloud outline
+const vec3 SHADE = vec3(214.,224.,236.)/255.;   // shaded cloud underside
 const vec3 DOT_L = vec3(120.,150.,172.)/255.;
 const vec3 DOT_D = vec3(41.,100.,144.)/255.;
 const vec3 WINDC = vec3(44.,98.,178.)/255.;
@@ -128,7 +131,7 @@ void main(){
   sky *= 1. + (h-.5)*.035;                               // a little tile-to-tile grain
   vec3 bg = mix(sky, CLOUD, smoothstep(.08,.55,cov));
 
-  float gl = -1.; vec3 ink = INK; float strength = .9;
+  float gl = -1.; vec3 ink = INK; float strength = .9; float small = 1.;
   float dotM = 0.; vec3 dotC = DOT_L;
   if(cov < .1){
     // the dot: tiny and pale in light tiles, a heavier dark square in the deep patches
@@ -138,20 +141,18 @@ void main(){
     dotM = 1. - smoothstep(hs-.5, hs+.5, max(q.x,q.y));
     dotC = deep ? DOT_D : DOT_L; strength = deep ? .85 : .7;
   } else {
-    float shade = clamp((1.-lum(tone(sc.rgb)))*1.5, 0., 1.);   // 0 sunlit .. 1 deep underside
+    // shading lives in the tile colour: sunlit tops stay white, undersides take a soft blue-grey
+    float shade = clamp((1.-lum(tone(sc.rgb)))*1.5, 0., 1.);
+    bg = mix(bg, SHADE, smoothstep(.12,.75,shade)*.6*smoothstep(.25,.8,cov));
+    // a fine grey outline: one ring of small, light glyphs where the cloud meets open sky
     float open = min(min(cl,cr),min(cu,cd));
-    if(cov < .6 || open < .25){
-      // outline: which side is open sky decides the glyph
-      vec2 gc = vec2(cr-cl, cu-cd);
-      if(cov < .3) gl = h<.4?${gg('.')}:h<.7?${gg("'")}:h<.85?${gg('`')}:${gg(',')};
-      else if(abs(gc.x)*1.5 > abs(gc.y)) gl = gc.x>0. ? (h<.75?${gg('(')}:${gg(':')}) : (h<.75?${gg(')')}:${gg(';')});
-      else if(gc.y > 0.) gl = h<.45?${gg('~')}:h<.75?${gg('_')}:${gg('o')};       // underside edge
-      else gl = h<.5?${gg('.')}:h<.8?${gg(':')}:${gg("'")};                        // top edge
-      if(shade > .55 && gc.y > 0.) gl = h<.5?${gg('8')}:${gg('o')};
-    } else {
-      // body: clean white where the sun hits, filling in toward the shaded base
-      float s = shade + (h-.5)*.12;
-      gl = s<.3?-1.:s<.4?(h<.45?${gg('.')}:-1.):s<.5?${gg(':')}:s<.6?${gg(';')}:s<.72?${gg('o')}:${gg('8')};
+    if(open < .3 || cov < .5){
+      vec2 gc = vec2(cr-cl, cu-cd);                       // points into the cloud
+      if(cov < .28) gl = h<.5?${gg('.')}:h<.8?${gg("'")}:${gg('`')};
+      else if(abs(gc.x)*1.5 > abs(gc.y)) gl = gc.x>0. ? (h<.8?${gg('(')}:${gg(':')}) : (h<.8?${gg(')')}:${gg(':')});
+      else if(gc.y > 0.) gl = h<.5?${gg('~')}:h<.8?${gg('_')}:${gg('-')};   // underside
+      else gl = h<.55?${gg('.')}:h<.85?${gg("'")}:${gg('`')};              // top
+      ink = OUTLINE; strength = .75; small = .8;
     }
   }
   // pointer wind: a short trail of strokes in the direction of travel, deepening the tiles it crosses
@@ -165,7 +166,9 @@ void main(){
   vec3 c = bg;
   if(gl >= 0.){
     vec2 dx = dFdx(g), dy = dFdy(g);
-    float m = smoothstep(.05,.95,textureGrad(uAtlas,vec2((gl+gv.x)/uN,gv.y),dx/uN,dy).r);
+    vec2 gs = (gv-.5)/small+.5;                             // outline glyphs are drawn a size smaller
+    float inside = step(0.,gs.x)*step(gs.x,1.)*step(0.,gs.y)*step(gs.y,1.);
+    float m = inside*smoothstep(.05,.95,textureGrad(uAtlas,vec2((gl+clamp(gs.x,0.,1.))/uN,clamp(gs.y,0.,1.)),dx/(uN*small),dy/small).r);
     c = mix(bg, ink, m*strength);
   }
   c = mix(c, dotC, dotM*strength);
@@ -303,18 +306,23 @@ async function main() {
           const ddx = sx - p.x, ddy = sy - p.y, d = Math.hypot(ddx, ddy);
           if (d > p.r) continue;
           const f = 1 - d / p.r;
-          if (p.gust) { c.vx += ddx / (d + 1) * 40 * f * scale; c.vy -= ddy / (d + 1) * 18 * f * scale; }
-          else { c.vx += p.dx * .9 * f * scale; c.vy -= p.dy * .4 * f * scale; }
+          // pushes set where a cloud wants to be, not how fast it goes; it eases there and back
+          if (p.gust) { c.tx += ddx / (d + 1) * 9 * f * scale; c.ty -= ddy / (d + 1) * 4 * f * scale; }
+          else { c.tx += p.dx * .06 * f * scale; c.ty -= p.dy * .03 * f * scale; }
+          c.tx = clamp(c.tx, -16 * scale, 16 * scale); c.ty = clamp(c.ty, -6 * scale, 6 * scale);
         }
       }
       pushes.length = 0;
     }
-    // clouds drift east, carry any push, settle back, and wrap round out of sight
+    // clouds drift east and wrap round out of sight; a nudge moves a cloud a short way off its path,
+    // smoothly, and it drifts back over a few seconds, so the sky can never be swept clear
+    const settle = Math.exp(-dt * .45), ease = 1 - Math.exp(-dt * 1.4);
     for (const c of clouds.field) {
-      c.x += (3.2 + c.vx) * dt; c.y += c.vy * dt;
-      const k = Math.exp(-dt * 1.6); c.vx *= k; c.vy *= k;
-      c.y += (c.y0 - c.y) * Math.min(1, dt * .5);
-      if (c.x > c.lim) c.x -= 2 * c.lim; else if (c.x < -c.lim) c.x += 2 * c.lim;
+      c.hx += 3.2 * dt;
+      if (c.hx > c.lim) c.hx -= 2 * c.lim;
+      c.tx *= settle; c.ty *= settle;
+      c.ox += (c.tx - c.ox) * ease; c.oy += (c.ty - c.oy) * ease;
+      c.x = c.hx + c.ox; c.y = c.y0 + c.oy;
     }
     // each cloud turns its side profile to the viewer, so clouds high overhead still read as fluffy cumulus
     // rather than flat bases seen from below
