@@ -1,322 +1,331 @@
-// ASCII blue sky: a grid of tinted cells with drifting glyph clouds and a
-// cursor "wind" trail drawn in slash characters.
+// ASCII blue sky.
+//
+// Same approach as the Seed Data diorama: render a real, lit scene first, then
+// turn it into ASCII in a second pass. Pass 1 draws a sky with volumetric-looking
+// cumulus clouds (domain-warped fbm, light marched toward the sun, so tops are
+// bright and undersides fall into blue-grey shadow). Pass 2 samples that image
+// once per character cell, picks a glyph from the cell's brightness and edges,
+// and inks it in a darker shade of the cell's own colour. A cursor "wind" trail
+// is stamped on top as / - | \ characters.
 (() => {
   const canvas = document.getElementById('sky');
   const content = document.getElementById('content');
   if (!canvas) return;
-  const ctx = canvas.getContext('2d');
+  const gl = canvas.getContext('webgl2', { antialias: false, alpha: false, premultipliedAlpha: false });
+  if (!gl) { canvas.style.display = 'none'; return; }
 
-  // ---- look -------------------------------------------------------------
-  const CW = 8;            // cell width  (css px)
-  const CH = 12;           // cell height (css px)
-  const BG = [249, 249, 249];
-  const SKY_PALE = [222, 238, 246];
-  const SKY_MID = [178, 224, 242];
-  const SKY_DEEP = [124, 202, 234];
-  const CLOUD = [252, 252, 253];
-  const DOT_LIGHT = 'rgba(120, 150, 172, 0.75)';
-  const DOT_DEEP = 'rgba(62, 130, 172, 0.85)';
-  const GLYPH = 'rgb(108, 118, 132)';
-  const WIND = [44, 98, 178];
-  const WIND_SPEED = 2.6;  // cells per second, clouds drift to the right
-  const CARD_PAD_X = 64;   // how far the white panel extends past the text column
-  const CARD_PAD_TOP = 56;
+  const CW = 8, CH = 12;          // character cell, css px
+  const SCENE_SCALE = 2;          // scene texels per cell (each axis)
+  const CARD_PAD_X = 64, CARD_PAD_TOP = 56;
+  const DEBUG_SCENE = location.search.includes('scene');  // ?scene shows the lit sky before ASCII
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // ---- glyph atlas ----------------------------------------------------------
+  const GLYPHS = " .'`,:;-~=+*oO08@/\\|_—";
+  const gi = (ch) => GLYPHS.indexOf(ch).toFixed(1);
+  function makeAtlas() {
+    const c = document.createElement('canvas');
+    c.width = 64 * GLYPHS.length; c.height = 120;
+    const x = c.getContext('2d');
+    x.fillStyle = '#000'; x.fillRect(0, 0, c.width, c.height);
+    x.fillStyle = '#fff'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.font = '100px Menlo, Monaco, Consolas, "Cascadia Mono", "DejaVu Sans Mono", monospace';
+    [...GLYPHS].forEach((ch, i) => {
+      if (ch === '—') x.fillRect(i * 64, 120 * 0.45, 64, 120 * 0.1);
+      else x.fillText(ch, (i + 0.5) * 64, 120 * 0.52);
+    });
+    return c;
+  }
 
-  // ---- 3D simplex noise (Gustavson) -------------------------------------
-  const grad3 = [1,1,0,-1,1,0,1,-1,0,-1,-1,0,1,0,1,-1,0,1,1,0,-1,-1,0,-1,0,1,1,0,-1,1,0,1,-1,0,-1,-1];
-  const perm = new Uint8Array(512);
-  {
-    const p = new Uint8Array(256);
-    for (let i = 0; i < 256; i++) p[i] = i;
-    let s = 1337;
-    for (let i = 255; i > 0; i--) {
-      s = (s * 16807) % 2147483647;
-      const j = s % (i + 1);
-      const t = p[i]; p[i] = p[j]; p[j] = t;
+  // ---- shaders --------------------------------------------------------------
+  const VERT = `#version 300 es
+  in vec2 aPos; void main(){ gl_Position = vec4(aPos,0.,1.); }`;
+
+  const NOISE = `
+  float hash(vec2 p){ p = fract(p*vec2(123.34,456.21)); p += dot(p,p+45.32); return fract(p.x*p.y); }
+  float noise(vec2 p){
+    vec2 i = floor(p), f = fract(p); vec2 u = f*f*(3.-2.*f);
+    return mix(mix(hash(i),hash(i+vec2(1,0)),u.x), mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),u.x), u.y);
+  }
+  const mat2 ROT = mat2(1.6,1.2,-1.2,1.6);
+  float fbm4(vec2 p){ float a=.5,s=0.; for(int i=0;i<4;i++){ s+=a*noise(p); p=ROT*p; a*=.5; } return s/.9375; }
+  float fbm6(vec2 p){ float a=.5,s=0.; for(int i=0;i<6;i++){ s+=a*noise(p); p=ROT*p; a*=.5; } return s/.984; }`;
+
+  // Pass 1: the actual sky, one texel = half a character cell.
+  const SCENE = `#version 300 es
+  precision highp float;
+  uniform vec2 uRes;    // scene texture size
+  uniform vec2 uView;   // css px
+  uniform float uTime;
+  out vec4 outColor;
+  ${NOISE}
+  const vec2 SUN = normalize(vec2(-.35,-1.));   // up and a little left (y points down)
+
+  // One cumulus layer. Returns lit colour + coverage.
+  vec4 layer(vec2 p, float scale, float speed, float cov, float seed, vec3 sky){
+    vec2 q = p/scale; q.y *= 1.75; q.x -= uTime*speed; q += seed;
+    vec2 w = vec2(fbm4(q*.45 + vec2(0., uTime*.012)), fbm4(q*.45 + vec2(5.2,1.3) - uTime*.01));
+    q += (w-.5)*1.35;
+    float thr = 1. - cov;
+    float d = fbm6(q) - thr;
+    if(d < -.03) return vec4(sky, 0.);
+    float alpha = smoothstep(-.01, .05, d);
+    // march toward the sun: the more cloud in the way, the darker this point
+    float acc = 0.;
+    for(int i=1;i<=5;i++){ acc += max(fbm4(q + SUN*float(i)*.075) - thr, 0.); }
+    float T = exp(-acc*2.3);
+    vec3 lit = vec3(1., .995, .985);
+    vec3 shade = mix(vec3(.74,.79,.87), sky, .22);
+    vec3 c = mix(shade, lit, T);
+    c = mix(c, lit, (1.-smoothstep(0., .1, d))*.55*T);   // bright, thin rims
+    c *= 1. - smoothstep(.15, .4, d)*.05;                  // dense cores a touch greyer
+    return vec4(c, alpha);
+  }
+
+  void main(){
+    vec2 p = gl_FragCoord.xy / uRes * uView;  // css px, y down (texel row 0 is the top of the page)
+    float vy = p.y / uView.y;
+    vec3 zen = vec3(.30,.62,.88), hor = vec3(.80,.91,.97);
+    vec3 sky = mix(zen, hor, pow(clamp(vy*1.05,0.,1.), .85));
+    sky *= 1. + (fbm4(p/420. + vec2(-uTime*.008, 0.)) - .5)*.10;
+
+    float fewer = 1. - smoothstep(.1, .8, vy)*.55;   // clouds thin out toward the page
+    vec4 far  = layer(p, 300., .045, .44*fewer, 17.3, sky);
+    vec4 near = layer(p, 170., .12, .47*fewer, 3.1, sky);
+    vec3 col = mix(sky, mix(far.rgb, vec3(1.), .35), far.a*.6);
+    col = mix(col, near.rgb, near.a);
+    float a = max(near.a, far.a*.6);
+    outColor = vec4(col, a);
+  }`;
+
+  // Pass 2: ASCII.
+  const ASCII = `#version 300 es
+  precision highp float;
+  uniform sampler2D uScene, uAtlas, uWind;
+  uniform vec2 uRes, uView, uCell, uGrid;
+  uniform float uDpr, uN, uTime, uDebug;
+  uniform vec3 uCard;   // left, top, right in css px (top < 0 disables)
+  out vec4 outColor;
+  ${NOISE}
+  float lum(vec3 c){ return dot(c, vec3(.25,.6,.15)); }
+  const vec3 BG = vec3(249./255.);
+  void main(){
+    vec2 px = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y) / uDpr;
+    vec2 g = px / uCell, cell = floor(g), gv = g - cell;
+    vec2 cuv = (cell + .5) / uGrid;
+    vec4 sc = texture(uScene, cuv);
+    vec3 col = sc.rgb; float a = sc.a, L = lum(col);
+    vec2 e = 1. / uGrid;
+    vec4 x0 = texture(uScene, cuv - vec2(e.x,0)), x1 = texture(uScene, cuv + vec2(e.x,0));
+    vec4 y0 = texture(uScene, cuv - vec2(0,e.y)), y1 = texture(uScene, cuv + vec2(0,e.y));
+    vec2 grad = vec2(lum(x1.rgb)-lum(x0.rgb), (lum(y1.rgb)-lum(y0.rgb))*.66);
+    float mag = length(grad);
+    float aMag = length(vec2(x1.a-x0.a, y1.a-y0.a));
+    float a4 = mod(atan(grad.y, grad.x) + .3927, 3.14159) / .7854;
+    float edgeG = a4<1. ? ${gi('|')} : a4<2. ? ${gi('\\')} : a4<3. ? ${gi('-')} : ${gi('/')};
+
+    float glyph; float strength; vec3 ink;
+    if(a < .06){                       // open sky
+      float depth = 1. - L;
+      glyph = depth < .44 ? ${gi('.')} : ${gi(':')};
+      ink = col*.55; strength = .75;
+    } else if(a < .45){                // wispy edges
+      glyph = a < .2 ? ${gi('.')} : a < .32 ? ${gi("'")} : ${gi(':')};
+      if(aMag > .55) glyph = edgeG;
+      ink = col*.66; strength = .65;
+    } else {                           // cloud body, glyph follows the shading
+      float s = 1. - L;
+      glyph = s < .06 ? ${gi(' ')} : s < .12 ? ${gi('.')} : s < .18 ? ${gi(':')} : s < .24 ? ${gi('~')}
+            : s < .3 ? ${gi('o')} : ${gi('O')};
+      if(mag > .16 && s > .1) glyph = edgeG;
+      ink = col*.72; strength = .6;
     }
-    for (let i = 0; i < 512; i++) perm[i] = p[i & 255];
-  }
-  const F3 = 1 / 3, G3 = 1 / 6;
-  function noise3(x, y, z) {
-    const s = (x + y + z) * F3;
-    const i = Math.floor(x + s), j = Math.floor(y + s), k = Math.floor(z + s);
-    const t = (i + j + k) * G3;
-    const x0 = x - (i - t), y0 = y - (j - t), z0 = z - (k - t);
-    let i1, j1, k1, i2, j2, k2;
-    if (x0 >= y0) {
-      if (y0 >= z0) { i1=1;j1=0;k1=0;i2=1;j2=1;k2=0; }
-      else if (x0 >= z0) { i1=1;j1=0;k1=0;i2=1;j2=0;k2=1; }
-      else { i1=0;j1=0;k1=1;i2=1;j2=0;k2=1; }
-    } else {
-      if (y0 < z0) { i1=0;j1=0;k1=1;i2=0;j2=1;k2=1; }
-      else if (x0 < z0) { i1=0;j1=1;k1=0;i2=0;j2=1;k2=1; }
-      else { i1=0;j1=1;k1=0;i2=1;j2=1;k2=0; }
+
+    // cursor wind
+    vec2 wnd = texture(uWind, cuv).rg;
+    if(wnd.r > .08){
+      float d = floor(wnd.g*4. + .5);
+      glyph = d < .5 ? ${gi('-')} : d < 1.5 ? ${gi('\\')} : d < 2.5 ? ${gi('|')} : ${gi('/')};
+      ink = vec3(.17,.38,.70); strength = min(1., wnd.r*1.15);
+      col = mix(col, col*.86, wnd.r*.5);
     }
-    const x1 = x0 - i1 + G3, y1 = y0 - j1 + G3, z1 = z0 - k1 + G3;
-    const x2 = x0 - i2 + 2 * G3, y2 = y0 - j2 + 2 * G3, z2 = z0 - k2 + 2 * G3;
-    const x3 = x0 - 1 + 3 * G3, y3 = y0 - 1 + 3 * G3, z3 = z0 - 1 + 3 * G3;
-    const ii = i & 255, jj = j & 255, kk = k & 255;
-    let n = 0, tt, g;
-    tt = 0.6 - x0*x0 - y0*y0 - z0*z0;
-    if (tt > 0) { g = (perm[ii + perm[jj + perm[kk]]] % 12) * 3; tt *= tt; n += tt * tt * (grad3[g]*x0 + grad3[g+1]*y0 + grad3[g+2]*z0); }
-    tt = 0.6 - x1*x1 - y1*y1 - z1*z1;
-    if (tt > 0) { g = (perm[ii+i1 + perm[jj+j1 + perm[kk+k1]]] % 12) * 3; tt *= tt; n += tt * tt * (grad3[g]*x1 + grad3[g+1]*y1 + grad3[g+2]*z1); }
-    tt = 0.6 - x2*x2 - y2*y2 - z2*z2;
-    if (tt > 0) { g = (perm[ii+i2 + perm[jj+j2 + perm[kk+k2]]] % 12) * 3; tt *= tt; n += tt * tt * (grad3[g]*x2 + grad3[g+1]*y2 + grad3[g+2]*z2); }
-    tt = 0.6 - x3*x3 - y3*y3 - z3*z3;
-    if (tt > 0) { g = (perm[ii+1 + perm[jj+1 + perm[kk+1]]] % 12) * 3; tt *= tt; n += tt * tt * (grad3[g]*x3 + grad3[g+1]*y3 + grad3[g+2]*z3); }
-    return 32 * n; // roughly -1..1
-  }
-  function fbm(x, y, z) {
-    return noise3(x, y, z) * 0.6 + noise3(x * 2.03, y * 2.03, z * 1.7) * 0.28 + noise3(x * 4.1, y * 4.1, z * 2.3) * 0.12;
-  }
-  // clouds: smoother than the sky, with a little crisp detail on the edges
-  function cloudNoise(x, y, z) {
-    return noise3(x, y, z) * 0.72 + noise3(x * 2.1, y * 2.1, z * 1.6) * 0.22 + noise3(x * 5.3, y * 5.3, z * 2.2) * 0.06;
-  }
-  const smooth = (a, b, v) => { const t = Math.min(1, Math.max(0, (v - a) / (b - a))); return t * t * (3 - 2 * t); };
-  const hash = (x, y) => { let h = (x * 374761393 + y * 668265263) | 0; h = (h ^ (h >>> 13)) * 1274126177; return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
 
-  // ---- glyph ramps for cloud edges (thin -> dense) ----------------------
-  const RAMP = [
-    [".", "'", "`", ",", "."],
-    [":", ";", "~", "-", ":", "_"],
-    ["(", ")", ";", ":", "o", "~"],
-    ["o", "o", "8", ";", "o", "0"],
-  ];
-  const BASE = ["o", "8", "o", "0", "8", ")", "("]; // the heavier underside of a cloud
+    vec2 dx = dFdx(g), dy = dFdy(g);
+    float m = smoothstep(.05, .95, textureGrad(uAtlas, vec2((glyph + gv.x)/uN, gv.y), dx/uN, dy/vec2(uN,1.)).r);
+    vec3 bg = mix(col, vec3(1.), .1);
+    vec3 c = mix(bg, ink, m*strength);
 
-  // ---- sizing -----------------------------------------------------------
-  let W = 0, H = 0, cols = 0, rows = 0, dpr = 1;
-  let cellCanvas, cellCtx, cellImg, gridPattern;
-  let wind, windDir;
+    // thin white seams between cells
+    vec2 cp = gv * uCell;
+    float seam = max(step(uCell.x - 1., cp.x), step(uCell.y - 1., cp.y));
+    c = mix(c, vec3(1.), seam*.78);
 
+    // melt into the page toward the bottom
+    float vy = px.y / uView.y;
+    c = mix(c, BG, smoothstep(.5, .9, vy));
+
+    // soft panel behind the content, top edge wavering like a cloud bank
+    if(uCard.y > -9000.){
+      float wob = (fbm4(vec2(px.x/70. - uTime*.05, 3.3)) - .5)*18. + (noise(vec2(px.x/16. + uTime*.1, 8.1)) - .5)*6.;
+      float dX = max(uCard.x - px.x, px.x - uCard.z);
+      float dY = (uCard.y + wob) - px.y;
+      float d = max(dX, dY);
+      c = mix(c, BG, smoothstep(14., -12., d));
+    }
+    if(uDebug > .5) c = texture(uScene, px/uView).rgb;
+    outColor = vec4(c, 1.);
+  }`;
+
+  function compile(type, src) {
+    const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+    return s;
+  }
+  function program(fs) {
+    const p = gl.createProgram();
+    gl.attachShader(p, compile(gl.VERTEX_SHADER, VERT));
+    gl.attachShader(p, compile(gl.FRAGMENT_SHADER, fs));
+    gl.bindAttribLocation(p, 0, 'aPos');
+    gl.linkProgram(p);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+    const u = {};
+    const n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
+    for (let i = 0; i < n; i++) { const info = gl.getActiveUniform(p, i); u[info.name] = gl.getUniformLocation(p, info.name); }
+    return { p, u };
+  }
+
+  let scene, ascii;
+  try { scene = program(SCENE); ascii = program(ASCII); }
+  catch (err) { console.error(err); canvas.style.display = 'none'; return; }
+
+  const quad = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, quad);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0);
+  gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+
+  function texture(filter) {
+    const t = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, t);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filter);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter === gl.LINEAR_MIPMAP_LINEAR ? gl.LINEAR : filter);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    return t;
+  }
+
+  const atlasTex = texture(gl.LINEAR_MIPMAP_LINEAR);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, makeAtlas());
+  gl.generateMipmap(gl.TEXTURE_2D);
+
+  const sceneTex = texture(gl.LINEAR);
+  const fbo = gl.createFramebuffer();
+  const windTex = texture(gl.NEAREST);
+
+  // ---- sizing -----------------------------------------------------------------
+  let W = 0, H = 0, dpr = 1, cols = 0, rows = 0, sw = 0, sh = 0;
+  let wind, windDir, windBytes;
   function resize() {
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
-    W = canvas.clientWidth;
-    H = canvas.clientHeight;
-    canvas.width = Math.round(W * dpr);
-    canvas.height = Math.round(H * dpr);
-    cols = Math.ceil(W / CW) + 1;
-    rows = Math.ceil(H / CH) + 1;
-
-    cellCanvas = document.createElement('canvas');
-    cellCanvas.width = cols;
-    cellCanvas.height = rows;
-    cellCtx = cellCanvas.getContext('2d');
-    cellImg = cellCtx.createImageData(cols, rows);
-
-    // 1px white seams between cells
-    const tile = document.createElement('canvas');
-    tile.width = Math.round(CW * dpr);
-    tile.height = Math.round(CH * dpr);
-    const tctx = tile.getContext('2d');
-    tctx.fillStyle = 'rgba(255,255,255,0.9)';
-    tctx.fillRect(tile.width - Math.max(1, Math.round(dpr)), 0, Math.max(1, Math.round(dpr)), tile.height);
-    tctx.fillRect(0, tile.height - Math.max(1, Math.round(dpr)), tile.width, Math.max(1, Math.round(dpr)));
-    gridPattern = ctx.createPattern(tile, 'repeat');
-
+    dpr = Math.min(devicePixelRatio || 1, 2);
+    W = canvas.clientWidth; H = canvas.clientHeight;
+    canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+    cols = Math.ceil(W / CW); rows = Math.ceil(H / CH);
+    sw = cols * SCENE_SCALE; sh = rows * SCENE_SCALE;
+    gl.bindTexture(gl.TEXTURE_2D, sceneTex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, sw, sh, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, sceneTex, 0);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     wind = new Float32Array(cols * rows);
     windDir = new Uint8Array(cols * rows);
+    windBytes = new Uint8Array(cols * rows * 2);
   }
 
-  // ---- cursor wind trail --------------------------------------------------
-  const WIND_GLYPHS = ['-', '\\', '|', '/'];
+  // ---- cursor wind trail ------------------------------------------------------
   let last = null;
   function stamp(x0, y0, x1, y1) {
-    const dx = x1 - x0, dy = y1 - y0;
-    const len = Math.hypot(dx, dy);
+    const dx = x1 - x0, dy = y1 - y0, len = Math.hypot(dx, dy);
     if (len < 2) return;
-    // orientation of the motion as a screen glyph
-    let a = Math.atan2(dy, dx);
-    if (a < 0) a += Math.PI;                        // fold to 0..PI
-    const dir = Math.round(a / (Math.PI / 4)) % 4;  // 0 '-', 1 '\', 2 '|', 3 '/'
-    const r = 20;
-    const strength = Math.min(1, 0.35 + len / 40);
-    const steps = Math.ceil(len / 4);
+    let ang = Math.atan2(dy, dx); if (ang < 0) ang += Math.PI;
+    const dir = Math.round(ang / (Math.PI / 4)) % 4;     // 0 '-', 1 '\', 2 '|', 3 '/'
+    const r = 20, strength = Math.min(1, 0.35 + len / 40), steps = Math.ceil(len / 4);
     for (let s = 0; s <= steps; s++) {
       const px = x0 + (dx * s) / steps, py = y0 + (dy * s) / steps;
       const c0 = Math.max(0, Math.floor((px - r) / CW)), c1 = Math.min(cols - 1, Math.floor((px + r) / CW));
       const r0 = Math.max(0, Math.floor((py - r) / CH)), r1 = Math.min(rows - 1, Math.floor((py + r) / CH));
-      for (let ry = r0; ry <= r1; ry++) {
-        for (let cx = c0; cx <= c1; cx++) {
-          const ex = cx * CW + CW / 2 - px, ey = ry * CH + CH / 2 - py;
-          const d = Math.hypot(ex, ey);
-          if (d > r) continue;
-          const v = strength * (1 - (d / r) * 0.45);
-          const idx = ry * cols + cx;
-          if (v > wind[idx]) { wind[idx] = v; windDir[idx] = dir; }
-        }
+      for (let ry = r0; ry <= r1; ry++) for (let cx = c0; cx <= c1; cx++) {
+        const d = Math.hypot(cx * CW + CW / 2 - px, ry * CH + CH / 2 - py);
+        if (d > r) continue;
+        const v = strength * (1 - (d / r) * 0.45), i = ry * cols + cx;
+        if (v > wind[i]) { wind[i] = v; windDir[i] = dir; }
       }
     }
+    kick();
   }
-  window.addEventListener('pointermove', (e) => {
+  addEventListener('pointermove', (e) => {
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left, y = e.clientY - rect.top;
     if (last && wind) stamp(last.x, last.y, x, y);
     last = { x, y };
   }, { passive: true });
-  window.addEventListener('pointerleave', () => { last = null; });
   document.addEventListener('mouseleave', () => { last = null; });
 
-  // ---- frame ------------------------------------------------------------
-  const lightDots = [], deepDots = [];
+  // ---- frame ------------------------------------------------------------------
+  let running = false, t0 = performance.now();
+  function kick() { if (!running) { running = true; requestAnimationFrame(frame); } }
+
   function frame(now) {
-    const t = reduceMotion ? 0 : now / 1000;
-    const data = cellImg.data;
-    lightDots.length = 0; deepDots.length = 0;
-    const glyphs = [];
-
-    const drift = t * WIND_SPEED;
-    for (let ry = 0; ry < rows; ry++) {
-      const vy = ry / rows;                               // 0 top .. 1 bottom
-      const skyBias = (1 - vy) * 0.3;                    // deeper blue toward the top
-      const cloudBias = 0.02 - vy * 0.34;                 // more clouds up high
-      for (let cx = 0; cx < cols; cx++) {
-        // sky tint: big soft patches drifting slower than the clouds
-        const sn = fbm((cx - drift * 0.45) / 30, ry / 14, t * 0.02 + 10);
-        const s = Math.min(1, Math.max(0, sn * 0.8 + 0.22 + skyBias));
-        // cloud density
-        const nx = (cx - drift) / 38, ny = ry / 14;
-        const cn = cloudNoise(nx, ny, t * 0.035) + cloudBias;
-        const c = smooth(0.24, 0.56, cn);
-
-        let r, g, b;
-        if (s < 0.5) { const k = s / 0.5; r = SKY_PALE[0] + (SKY_MID[0] - SKY_PALE[0]) * k; g = SKY_PALE[1] + (SKY_MID[1] - SKY_PALE[1]) * k; b = SKY_PALE[2] + (SKY_MID[2] - SKY_PALE[2]) * k; }
-        else { const k = (s - 0.5) / 0.5; r = SKY_MID[0] + (SKY_DEEP[0] - SKY_MID[0]) * k; g = SKY_MID[1] + (SKY_DEEP[1] - SKY_MID[1]) * k; b = SKY_MID[2] + (SKY_DEEP[2] - SKY_MID[2]) * k; }
-        r += (CLOUD[0] - r) * c; g += (CLOUD[1] - g) * c; b += (CLOUD[2] - b) * c;
-
-        const idx = ry * cols + cx;
-        const w = wind[idx];
-        if (w > 0.02) {
-          r += (SKY_DEEP[0] - r) * w * 0.25; g += (SKY_DEEP[1] - g) * w * 0.25; b += (SKY_DEEP[2] - b) * w * 0.25;
-          wind[idx] = w * (reduceMotion ? 0.8 : 0.935);
-        } else if (w) wind[idx] = 0;
-
-        const o = idx * 4;
-        data[o] = r; data[o + 1] = g; data[o + 2] = b; data[o + 3] = 255;
-
-        const px = cx * CW, py = ry * CH;
-        if (w > 0.08) {
-          glyphs.push(px, py, -1 - windDir[idx], w);
-        } else if (c < 0.06) {
-          (s > 0.74 ? deepDots : lightDots).push(px, py);
-        } else if (c < 0.93) {
-          const h = hash(cx, ry);
-          let band = c < 0.3 ? 0 : c < 0.55 ? 1 : c < 0.78 ? 2 : 3;
-          let ch;
-          if (band >= 2) {
-            // underside of the cloud reads heavier, like it is shaded
-            const below = cloudNoise(nx, (ry + 2) / 14, t * 0.035) + cloudBias;
-            if (below < cn - 0.06) ch = BASE[(h * BASE.length) | 0];
-            else if (band === 3 && h < 0.55) ch = null;
-          }
-          if (ch === undefined) { const set = RAMP[band]; ch = set[(h * set.length) | 0]; }
-          if (ch) glyphs.push(px, py, ch, 1);
-        } else if (hash(cx + 7, ry) < 0.04) {
-          glyphs.push(px, py, '.', 1); // a few specks inside the cloud body
-        }
-      }
+    const t = reduceMotion ? 0 : (now - t0) / 1000;
+    let active = false;
+    for (let i = 0; i < wind.length; i++) {
+      const w = wind[i];
+      windBytes[i * 2] = Math.min(255, w * 255);
+      windBytes[i * 2 + 1] = windDir[i] * 64;
+      if (w > 0.01) { wind[i] = w * 0.935; active = true; } else wind[i] = 0;
     }
 
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.globalAlpha = 1;
-    ctx.shadowBlur = 0;
+    // pass 1: scene
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+    gl.viewport(0, 0, sw, sh);
+    gl.useProgram(scene.p);
+    gl.uniform2f(scene.u.uRes, sw, sh);
+    gl.uniform2f(scene.u.uView, W, H);
+    gl.uniform1f(scene.u.uTime, t);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
 
-    // 1. cell colours
-    cellCtx.putImageData(cellImg, 0, 0);
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(cellCanvas, 0, 0, cols * CW, rows * CH);
-
-    // 2. white seams
-    ctx.save();
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.fillStyle = gridPattern;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.restore();
-
-    // 3. sky dots
-    ctx.fillStyle = DOT_LIGHT;
-    ctx.beginPath();
-    for (let i = 0; i < lightDots.length; i += 2) ctx.rect(lightDots[i] + CW / 2 - 1, lightDots[i + 1] + CH / 2 - 0.5, 1.5, 1.5);
-    ctx.fill();
-    ctx.fillStyle = DOT_DEEP;
-    ctx.beginPath();
-    for (let i = 0; i < deepDots.length; i += 2) ctx.rect(deepDots[i] + CW / 2 - 1.5, deepDots[i + 1] + CH / 2 - 1, 2.5, 2.5);
-    ctx.fill();
-
-    // 4. cloud + wind glyphs
-    ctx.font = '11px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = GLYPH;
-    for (let i = 0; i < glyphs.length; i += 4) {
-      const ch = glyphs[i + 2];
-      if (typeof ch === 'string') ctx.fillText(ch, glyphs[i] + CW / 2, glyphs[i + 1] + CH / 2);
-    }
-    for (let i = 0; i < glyphs.length; i += 4) {
-      const ch = glyphs[i + 2];
-      if (typeof ch !== 'number') continue;
-      const a = Math.min(1, glyphs[i + 3] * 1.15);
-      ctx.fillStyle = `rgba(${WIND[0]},${WIND[1]},${WIND[2]},${a})`;
-      ctx.fillText(WIND_GLYPHS[-1 - ch], glyphs[i] + CW / 2, glyphs[i + 1] + CH / 2);
-    }
-
-    // 5. sky melts into the page toward the bottom
-    const fade = ctx.createLinearGradient(0, H * 0.48, 0, H * 0.88);
-    fade.addColorStop(0, `rgba(${BG},0)`);
-    fade.addColorStop(0.55, `rgba(${BG},0.7)`);
-    fade.addColorStop(1, `rgba(${BG},1)`);
-    ctx.fillStyle = fade;
-    ctx.fillRect(0, H * 0.48, W, H * 0.52 + 2);
-
-    // 6. soft white panel behind the content with a fluffy, wavering top edge
+    // pass 2: ascii
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.useProgram(ascii.p);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, sceneTex);
+    gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, atlasTex);
+    gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, windTex);
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG8, cols, rows, 0, gl.RG, gl.UNSIGNED_BYTE, windBytes);
+    gl.uniform1i(ascii.u.uScene, 0); gl.uniform1i(ascii.u.uAtlas, 1); gl.uniform1i(ascii.u.uWind, 2);
+    gl.uniform2f(ascii.u.uRes, canvas.width, canvas.height);
+    gl.uniform2f(ascii.u.uView, W, H);
+    gl.uniform2f(ascii.u.uCell, CW, CH);
+    gl.uniform2f(ascii.u.uGrid, cols, rows);
+    gl.uniform1f(ascii.u.uDpr, dpr);
+    gl.uniform1f(ascii.u.uN, GLYPHS.length);
+    gl.uniform1f(ascii.u.uTime, t);
+    gl.uniform1f(ascii.u.uDebug, DEBUG_SCENE ? 1 : 0);
+    let card = [0, -10000, 0];
     if (content) {
-      const cr = content.getBoundingClientRect();
       const sr = canvas.getBoundingClientRect();
-      const inner = content.firstElementChild ? content.firstElementChild.getBoundingClientRect() : cr;
-      const left = inner.left - sr.left - CARD_PAD_X;
-      const right = inner.right - sr.left + CARD_PAD_X;
-      const top = inner.top - sr.top - CARD_PAD_TOP;
-      if (top < H) {
-        ctx.save();
-        ctx.fillStyle = `rgb(${BG})`;
-        ctx.shadowColor = `rgb(${BG})`;
-        ctx.shadowBlur = 22;
-        ctx.beginPath();
-        ctx.moveTo(left, H + 40);
-        ctx.lineTo(left, top + 14);
-        for (let x = left; x <= right; x += 6) {
-          const wob = fbm(x / 70 - t * 0.05, 3.3, t * 0.04) * 9 + noise3(x / 16, 8.1, t * 0.1) * 3;
-          ctx.lineTo(x, top + wob);
-        }
-        ctx.lineTo(right, top + 14);
-        ctx.lineTo(right, H + 40);
-        ctx.closePath();
-        ctx.fill();
-        ctx.fill(); // second pass thickens the glow at the edges
-        ctx.restore();
-      }
+      const inner = (content.firstElementChild || content).getBoundingClientRect();
+      card = [inner.left - sr.left - CARD_PAD_X, inner.top - sr.top - CARD_PAD_TOP, inner.right - sr.left + CARD_PAD_X];
     }
+    gl.uniform3f(ascii.u.uCard, card[0], card[1], card[2]);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
 
-    if (!reduceMotion || hasWind()) requestAnimationFrame(frame);
+    if (!reduceMotion || active) requestAnimationFrame(frame);
     else running = false;
   }
-  let running = true;
-  function hasWind() { for (let i = 0; i < wind.length; i++) if (wind[i] > 0) return true; return false; }
 
   resize();
-  let resizeTimer;
-  window.addEventListener('resize', () => {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(resize, 100);
-  });
-  if (reduceMotion) {
-    window.addEventListener('pointermove', () => {
-      if (!running) { running = true; requestAnimationFrame(frame); }
-    }, { passive: true });
-  }
-  requestAnimationFrame(frame);
+  let rt;
+  addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { resize(); kick(); }, 100); });
+  kick();
 })();
