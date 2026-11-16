@@ -5,49 +5,37 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>tabeebs</title>
   <link rel="stylesheet" href="style.css" />
-  <script type="module" src="build/sky.js"></script>
 </head>
 <body>
-  <svg width="0" height="0" style="position: absolute" aria-hidden="true" focusable="false">
-    <!-- the torn edge of the paper panel, as on the Seed Data landing page -->
-    <filter id="torn" x="-5%" y="-5%" width="110%" height="110%">
-      <feTurbulence type="fractalNoise" baseFrequency=".09" numOctaves="3" seed="3"/>
-      <feDisplacementMap in="SourceGraphic" scale="14"/>
-    </filter>
-  </svg>
+  <canvas id="sky" aria-hidden="true"></canvas>
 
-  <!-- The sky. Source: src/sky.js, bundled to build/sky.js. -->
-  <div class="stage">
-    <canvas id="sky" role="img" aria-label="An animated sky of drifting cumulus clouds, drawn in coloured text characters."></canvas>
-  </div>
+  <main id="content">
+    <header class="top">
+      <a class="brand" href="/">tabeebs</a>
+    </header>
 
-  <main class="panel" id="content">
-    <div class="inner">
-      <header class="top">
-        <a class="brand" href="/">tabeebs</a>
-      </header>
-
-      <section class="intro">
-        <div class="who">
-          <div class="avatar"></div>
-          <div>
-            <div class="name">tabeebs</div>
-            <div class="role">Your role goes here</div>
-          </div>
+    <section class="intro">
+      <div class="who">
+        <div class="avatar"></div>
+        <div>
+          <div class="name">tabeebs</div>
+          <div class="role">Your role goes here</div>
         </div>
-        <p>A short line about what you build and what you care about. This is placeholder copy, so swap it for your own.</p>
-        <p>You can reach me on <a href="https://github.com/tabeebs">GitHub</a>.</p>
-      </section>
+      </div>
+      <p>A short line about what you build and what you care about. This is placeholder copy, so swap it for your own.</p>
+      <p>You can reach me on <a href="https://github.com/tabeebs">GitHub</a>.</p>
+    </section>
 
-      <section class="collections">
-        <h2>Collections</h2>
-        <ul>
-          <li><a href="#">Blog</a><span class="rule"></span><span>Coming soon</span></li>
-          <li><a href="#">Projects</a><span class="rule"></span><span>Coming soon</span></li>
-          <li><a href="#">Notes</a><span class="rule"></span><span>Coming soon</span></li>
-        </ul>
-      </section>
-    </div>
+    <section class="collections">
+      <h2>Collections</h2>
+      <ul>
+        <li><a href="#">Blog</a><span class="rule"></span><span>Coming soon</span></li>
+        <li><a href="#">Projects</a><span class="rule"></span><span>Coming soon</span></li>
+        <li><a href="#">Notes</a><span class="rule"></span><span>Coming soon</span></li>
+      </ul>
+    </section>
   </main>
+
+  <script type="module" src="build/sky.js"></script>
 </body>
 </html>

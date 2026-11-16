@@ -1,8 +1,8 @@
-// Sky header: a live Three.js sky with lit cumulus clouds, drawn as coloured monospace glyphs with a
-// tilt-shift blur. The pipeline is the Seed Data landing diorama's (SeedData/app/landing/main.js):
-// render the scene at a few pixels per glyph cell into a half-float target, pick a glyph per cell from
-// its material class and brightness, ink it in the cell's own colour over a dimmed blur, then tilt-shift.
-// Clouds are clusters of lit puffs, like the diorama's chimney smoke, so they read with that same glyph ramp.
+// Sky header: a live Three.js sky with lit cumulus clouds, drawn as an ASCII tile grid.
+// The rendering follows the Seed Data landing diorama (SeedData/app/landing/main.js): a real lit scene renders
+// at a few pixels per glyph cell into a half-float target with each pixel's material class in alpha, and a glyph
+// pass reads it one cell at a time. The look is the original light sky: pale blue tiles with white seams, small
+// dots in open sky, grey glyphs on white cloud, a soft panel behind the content and a fade into the page.
 // Source for build/sky.js: rebuild with `npm run build` after editing.
 import * as THREE from 'three';
 
@@ -27,7 +27,7 @@ const SUN_DIR = new THREE.Vector3(-.35, .78, .52).normalize(); // high, behind t
 function buildDome() {
   const mat = new THREE.ShaderMaterial({
     side: THREE.BackSide, depthWrite: false, fog: false,
-    uniforms: { uZen: { value: new THREE.Color('#2a80e0') }, uHor: { value: new THREE.Color('#cfe6f7') }, uSun: { value: SUN_DIR } },
+    uniforms: { uZen: { value: new THREE.Color('#4d9ee0') }, uHor: { value: new THREE.Color('#cce8f7') }, uSun: { value: SUN_DIR } },
     vertexShader: `varying vec3 vDir; void main(){ vDir = normalize(position); gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); }`,
     fragmentShader: `uniform vec3 uZen, uHor, uSun; varying vec3 vDir;
       void main(){
@@ -46,10 +46,12 @@ function buildDome() {
 // Each cumulus is a cluster of squashed spheres: a flat-ish base, a domed top, the biggest puffs in the middle.
 function buildClouds(scene) {
   const field = [], puffs = [];
-  const N = COARSE ? 28 : 44;
+  const N = COARSE ? 30 : 48;
   for (let i = 0; i < N; i++) {
-    const z = -(70 + Math.pow(rnd(), 1.1) * 640), lim = Math.abs(z) * .95 + 90;
-    const w = 22 + rnd() * 40, base = 34 + rnd() * 34;
+    // spread the clouds by angle above the horizon, so the whole sky has some; nearer ones are smaller
+    const el = THREE.MathUtils.degToRad(3 + Math.pow(rnd(), .9) * 46), d = 170 + rnd() * 560;
+    const z = -d * Math.cos(el), lim = Math.abs(z) * .95 + 90;
+    const w = (22 + rnd() * 40) * Math.pow(d / 420, .6), base = d * Math.sin(el);
     const c = { x: (rnd() * 2 - 1) * lim, y: base, z, lim, first: puffs.length, n: Math.round(16 + w * .9) };
     for (let p = 0; p < c.n; p++) {
       const u = rnd() * 2 - 1, prof = 1 - u * u;
@@ -65,7 +67,10 @@ function buildClouds(scene) {
   return { field, puffs, mesh };
 }
 
-// ---------- ascii + tilt shift (from the diorama) ----------
+// ---------- glyph pass ----------
+// The Seed Data diorama's per-cell sampling (scene at a few pixels per cell, averaged with mip LOD, material
+// class in alpha, brightness and edge gradient from the neighbours), composited in the original light style:
+// pale blue tiles with white seams, small dots in open sky, grey glyphs on white cloud, melting into the page.
 const GLYPHS = " .'`,:;-~=+*oOsS$%&8#@/\\|_^v\u2014\"Y";
 const GI = Object.fromEntries([...GLYPHS].map((c, i) => [c, i]));
 const gg = (c) => GI[c].toFixed(1);
@@ -74,92 +79,98 @@ function buildAtlas() {
   c.width = tw * GLYPHS.length; c.height = th;
   const x = c.getContext('2d');
   x.fillStyle = '#000'; x.fillRect(0, 0, c.width, c.height); x.fillStyle = '#fff'; x.textAlign = 'center'; x.textBaseline = 'middle';
-  x.font = 'bold 100px Menlo, Monaco, Consolas, "Cascadia Mono", "DejaVu Sans Mono", "Liberation Mono", monospace';
-  [...GLYPHS].forEach((ch, i) => { if (ch === '\u2014') x.fillRect(i * tw, th * .44, tw, th * .12); else x.fillText(ch, (i + .5) * tw, th * .52); });
+  x.font = '100px Menlo, Monaco, Consolas, "Cascadia Mono", "DejaVu Sans Mono", "Liberation Mono", monospace';
+  [...GLYPHS].forEach((ch, i) => { if (ch === '\u2014') x.fillRect(i * tw, th * .45, tw, th * .1); else x.fillText(ch, (i + .5) * tw, th * .52); });
   const t = new THREE.CanvasTexture(c); t.generateMipmaps = true; t.minFilter = THREE.LinearMipmapLinearFilter; t.magFilter = THREE.LinearFilter; t.anisotropy = 8; t.flipY = false;
   return t;
 }
+const CW = 8, CH = 12;                       // glyph cell in css px, as in the original sky
+const CARD_PAD_X = 64, CARD_PAD_TOP = 56;    // the soft white panel reaches this far past the text column
 const asciiFrag = /* glsl */`
 precision highp float;
-uniform sampler2D uScene, uAtlas, uWind; uniform vec2 uGrid; uniform float uTime, uN;
+uniform sampler2D uScene, uAtlas, uWind; uniform vec2 uView, uCell, uGrid; uniform float uTime, uN; uniform vec3 uCard;
 in vec2 vUv; out vec4 outColor;
 float h21(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
 float vn(vec2 p){ vec2 i=floor(p),f=fract(p); f=f*f*(3.-2.*f); return mix(mix(h21(i),h21(i+vec2(1,0)),f.x),mix(h21(i+vec2(0,1)),h21(i+vec2(1,1)),f.x),f.y); }
+float fbm(vec2 p){ return vn(p)*.55 + vn(p*2.1+5.2)*.3 + vn(p*4.3+9.1)*.15; }
 float lum(vec3 c){ return dot(c,vec3(.25,.6,.15)); }
-vec3 grade(vec3 c){
+vec3 tone(vec3 c){
   if(any(isnan(c)) || any(isinf(c))) c = vec3(0.);
-  c = max(c,0.); c = c/(1.+c*.12); c = pow(c,vec3(1./2.2));
-  c = mix(c,c*c*(3.-2.*c),.5);
-  float l = lum(c); c = mix(vec3(l),c,1.24);
-  return clamp(c,0.,1.);
+  return pow(clamp(c,0.,1.), vec3(1./2.2));
 }
+const vec3 BG = vec3(249./255.);
 void main(){
-  vec2 g = vUv*uGrid, cell = floor(g), cuv = (cell+.5)/uGrid;
+  vec2 px = vec2(vUv.x, 1.-vUv.y)*uView;                // css px, y down
+  vec2 g = px/uCell, cell = floor(g), gv = g-cell;
+  vec2 cuv = vec2((cell.x+.5)*uCell.x/uView.x, 1.-(cell.y+.5)*uCell.y/uView.y);
   ivec2 sz = textureSize(uScene,0);
   float lodC = log2(float(sz.x)/uGrid.x)+.05;
-  vec3 col = grade(textureLod(uScene,cuv,lodC).rgb);
+  vec3 col = tone(textureLod(uScene,cuv,lodC).rgb);
   float cls = floor(texelFetch(uScene,ivec2(cuv*vec2(sz)),0).a*16.+.5);
   float L = lum(col);
-  vec2 e = 1./uGrid;
-  float lx0=lum(grade(textureLod(uScene,cuv-vec2(e.x,0),lodC).rgb)), lx1=lum(grade(textureLod(uScene,cuv+vec2(e.x,0),lodC).rgb));
-  float ly0=lum(grade(textureLod(uScene,cuv-vec2(0,e.y),lodC).rgb)), ly1=lum(grade(textureLod(uScene,cuv+vec2(0,e.y),lodC).rgb));
-  vec2 grad = vec2(lx1-lx0,(ly1-ly0)*.55); float mag = length(grad);
-  float a4 = mod(atan(grad.y,grad.x)+.3927,3.14159)/.7854;
-  float edgeG = a4<1.?${gg('|')}:a4<2.?${gg('\\')}:a4<3.?${gg('\u2014')}:${gg('/')};
-  float w = vn(cell*vec2(.05,.09)+vec2(-uTime*.28,uTime*.07))*2.-1.;
-  float gl = ${gg('.')};
-  if(cls<1.5){        // open sky: the brighter the air, the denser the glyph, with a breeze passing through
-    gl = L<.45?${gg('.')}:L<.58?${gg(':')}:L<.7?(w>.3?${gg('*')}:${gg('+')}):${gg('*')};
-  } else {            // cloud: the diorama's smoke, dust and chaff ramp
-    gl = L<.22?${gg('.')}:L<.4?${gg(':')}:L<.6?${gg('o')}:${gg('O')};
+  vec2 e = uCell/uView;
+  float lx0=lum(tone(textureLod(uScene,cuv-vec2(e.x,0),lodC).rgb)), lx1=lum(tone(textureLod(uScene,cuv+vec2(e.x,0),lodC).rgb));
+  float ly0=lum(tone(textureLod(uScene,cuv+vec2(0,e.y),lodC).rgb)), ly1=lum(tone(textureLod(uScene,cuv-vec2(0,e.y),lodC).rgb));
+  vec2 grad = vec2(lx1-lx0,(ly1-ly0)*.66); float mag = length(grad);
+  float a4 = mod(atan(-grad.y,grad.x)+.3927,3.14159)/.7854;
+  float edgeG = a4<1.?${gg('|')}:a4<2.?${gg('\\')}:a4<3.?${gg('-')}:${gg('/')};
+
+  float gl; float strength; vec3 ink;
+  if(cls<1.5){        // open sky: a small dot per tile, a heavier one where the blue runs deep
+    gl = L<.5?${gg(':')}:${gg('.')};
+    ink = col*.55; strength = .75;
+  } else {            // cloud: bright tops stay clean, the shaded body fills in with heavier glyphs
+    float s = 1.-L;
+    gl = s<.05?${gg(' ')}:s<.11?${gg('.')}:s<.17?${gg(':')}:s<.23?${gg('~')}:s<.3?${gg('o')}:${gg('O')};
+    if(mag>.12 && s>.08) gl = edgeG;
+    ink = col*.7; strength = .65;
   }
   // pointer wind: a short trail of strokes in the direction of travel
   vec4 wn = texelFetch(uWind, ivec2(cell), 0);
   if(wn.r > .08){
     float d = floor(wn.g*4.+.5);
-    gl = d<.5?${gg('\u2014')}:d<1.5?${gg('/')}:d<2.5?${gg('|')}:${gg('\\')};
-    col = mix(col, vec3(.85,.93,1.), wn.r*.6);
+    gl = d<.5?${gg('-')}:d<1.5?${gg('\\')}:d<2.5?${gg('|')}:${gg('/')};
+    ink = vec3(.17,.38,.70); strength = min(1., wn.r*1.15);
+    col = mix(col, col*.86, wn.r*.5);
   }
-  vec2 gv = g-cell, dx = dFdx(g), dy = dFdy(g);
-  float ink = smoothstep(.05,.95,textureGrad(uAtlas,vec2((gl+gv.x)/uN,1.-gv.y),dx/uN,dy).r);
-  vec3 blur = grade(textureLod(uScene,vUv,lodC+1.2).rgb);
-  outColor = vec4(mix(blur*.38,col*1.24+.012,ink),1.);
-}`;
-const tiltFrag = /* glsl */`
-precision highp float;
-uniform sampler2D uA; uniform vec2 uRes; uniform float uBlur;
-in vec2 vUv; out vec4 outColor;
-void main(){
-  float dy = abs(vUv.y-.45);
-  float r = pow(smoothstep(.27,.6,dy),1.6)*uBlur;
-  vec3 c = vec3(0.); float tw = 0.;
-  if(r<.2){ outColor = vec4(texture(uA,vUv).rgb,1.); return; }
-  float lod = max(log2(r/4.),0.);
-  for(int i=0;i<22;i++){
-    float t = float(i)+.5, a = t*2.39996, rr = sqrt(t/22.)*r;
-    vec2 o = vec2(cos(a),sin(a))*rr/uRes;
-    c += textureLod(uA,vUv+o,lod).rgb; tw += 1.;
+  vec2 dx = dFdx(g), dy = dFdy(g);
+  float m = smoothstep(.05,.95,textureGrad(uAtlas,vec2((gl+gv.x)/uN,gv.y),dx/uN,dy).r);
+  vec3 c = mix(mix(col, vec3(1.), .1), ink, m*strength);
+
+  // thin white seams between tiles
+  vec2 cp = gv*uCell;
+  c = mix(c, vec3(1.), max(step(uCell.x-1., cp.x), step(uCell.y-1., cp.y))*.78);
+
+  // melt into the page toward the bottom
+  c = mix(c, BG, smoothstep(.5, .9, px.y/uView.y));
+
+  // soft panel behind the content, its top edge wavering like a cloud bank
+  if(uCard.y > -9000.){
+    float wob = (fbm(vec2(px.x/70. - uTime*.05, 3.3)) - .5)*18. + (vn(vec2(px.x/16. + uTime*.1, 8.1)) - .5)*6.;
+    float d = max(max(uCard.x - px.x, px.x - uCard.z), (uCard.y + wob) - px.y);
+    c = mix(c, BG, smoothstep(14., -12., d));
   }
-  outColor = vec4(c/tw,1.);
+  outColor = vec4(c,1.);
 }`;
 
 async function main() {
   await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0)));
   const canvas = document.getElementById('sky');
+  const content = document.getElementById('content');
   if (!canvas) return;
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(1);
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
 
   const scene = new THREE.Scene();
-  scene.fog = new THREE.Fog('#cfe6f7', 300, 950);   // far clouds fade into the haze at the horizon
+  scene.fog = new THREE.Fog('#cce8f7', 300, 950);   // far clouds fade into the haze at the horizon
   const sunTarget = new THREE.Vector3(0, 52, -380);
-  const sun = new THREE.DirectionalLight('#fff1dc', 2.4);
+  const sun = new THREE.DirectionalLight('#fff4e6', 2.8);
   sun.position.copy(sunTarget).addScaledVector(SUN_DIR, 700); sun.target.position.copy(sunTarget);
   sun.castShadow = true; sun.shadow.mapSize.set(COARSE ? 1024 : 2048, COARSE ? 1024 : 2048);
   Object.assign(sun.shadow.camera, { left: -760, right: 760, top: 520, bottom: -520, near: 200, far: 1300 });
-  sun.shadow.intensity = .4; sun.shadow.bias = -.0005; sun.shadow.normalBias = .6; sun.shadow.autoUpdate = false;
-  scene.add(sun, sun.target, new THREE.HemisphereLight('#dcecff', '#a9b8cc', 1.6));
+  sun.shadow.intensity = .28; sun.shadow.bias = -.0005; sun.shadow.normalBias = .6; sun.shadow.autoUpdate = false;
+  scene.add(sun, sun.target, new THREE.HemisphereLight('#e4f0ff', '#c6d3e4', 1.9));
   scene.add(buildDome());
   const clouds = buildClouds(scene);
 
@@ -173,17 +184,15 @@ async function main() {
   }
 
   const rt = new THREE.WebGLRenderTarget(4, 4, { type: THREE.HalfFloatType, generateMipmaps: true, minFilter: THREE.LinearMipmapLinearFilter, magFilter: THREE.LinearFilter });
-  const art = new THREE.WebGLRenderTarget(4, 4, { generateMipmaps: true, minFilter: THREE.LinearMipmapLinearFilter, magFilter: THREE.LinearFilter, depthBuffer: false });
   let windTex = new THREE.DataTexture(new Uint8Array(4), 1, 1, THREE.RGBAFormat); windTex.needsUpdate = true;
   const vtx = `in vec3 position; in vec2 uv; out vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy,0.,1.); }`;
   const ascii = new THREE.RawShaderMaterial({ glslVersion: THREE.GLSL3, vertexShader: vtx, fragmentShader: asciiFrag, depthTest: false, depthWrite: false,
-    uniforms: { uScene: { value: rt.texture }, uAtlas: { value: buildAtlas() }, uWind: { value: windTex }, uGrid: { value: new THREE.Vector2(200, 100) }, uTime: time, uN: { value: GLYPHS.length } } });
-  const tilt = new THREE.RawShaderMaterial({ glslVersion: THREE.GLSL3, vertexShader: vtx, fragmentShader: tiltFrag, depthTest: false, depthWrite: false,
-    uniforms: { uA: { value: art.texture }, uRes: { value: new THREE.Vector2(4, 4) }, uBlur: { value: 26 } } });
+    uniforms: { uScene: { value: rt.texture }, uAtlas: { value: buildAtlas() }, uWind: { value: windTex }, uView: { value: new THREE.Vector2(1, 1) },
+      uCell: { value: new THREE.Vector2(CW, CH) }, uGrid: { value: new THREE.Vector2(1, 1) }, uTime: time, uN: { value: GLYPHS.length }, uCard: { value: new THREE.Vector3(0, -10000, 0) } } });
   const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), ascii); quad.frustumCulled = false;
   const post = new THREE.Scene(); post.add(quad); const postCam = new THREE.Camera();
 
-  // pointer wind, one byte pair per glyph cell (row 0 is the bottom row, as in the glyph pass)
+  // pointer wind, one texel per glyph cell (row 0 is the top row)
   let cols = 1, rows = 1, wind = new Float32Array(1), windDir = new Uint8Array(1);
   function setGrid(c, r) {
     cols = c; rows = r; wind = new Float32Array(c * r); windDir = new Uint8Array(c * r);
@@ -192,19 +201,16 @@ async function main() {
     ascii.uniforms.uWind.value = windTex;
   }
 
-  let qScale = 1;
-  function resize(w0 = canvas.clientWidth || innerWidth, h0 = canvas.clientHeight || innerHeight) {
-    const cw = Math.max(1, w0), ch = Math.max(1, h0), aspect = cw / ch;
-    let h = clamp(ch * Math.min(devicePixelRatio || 1, 2), 720, COARSE ? 1100 : 1440), w = h * aspect;
-    const maxW = 2560; if (w > maxW) { h *= maxW / w; w = maxW; }
-    const W = Math.round(w), HH = Math.round(h);
-    const r = Math.round(clamp(ch / ROW_PX, 40, 150)), c = Math.round(r * 2 * aspect);
-    ascii.uniforms.uGrid.value.set(c, r);
+  let qScale = 1, W = 1, H = 1;
+  function resize() {
+    W = Math.max(1, canvas.clientWidth || innerWidth); H = Math.max(1, canvas.clientHeight || innerHeight);
+    const aspect = W / H, c = Math.ceil(W / CW), r = Math.ceil(H / CH);
+    renderer.setSize(W, H, false);
+    ascii.uniforms.uView.value.set(W, H); ascii.uniforms.uGrid.value.set(c, r);
     if (c !== cols || r !== rows) setGrid(c, r);
+    // the scene is only ever read one cell at a time, so it renders at a few pixels per cell (as on the diorama)
     const S = (COARSE ? 2.6 : 3.2) * Math.sqrt(qScale);
-    if (canvas.width !== W || canvas.height !== HH) renderer.setSize(W, HH, false); rt.setSize(Math.round(c * S), Math.round(r * 2 * S)); art.setSize(W, HH);
-    tilt.uniforms.uRes.value.set(W, HH); tilt.uniforms.uBlur.value = 26 * HH / 1440;
-    // a wide lens on a wide header, a taller one on a phone; the bottom edge sits just above the horizon
+    rt.setSize(Math.round(c * S), Math.round(r * S * CH / CW));
     const hfov = THREE.MathUtils.degToRad(74), vfov = clamp(2 * Math.atan(Math.tan(hfov / 2) / aspect), THREE.MathUtils.degToRad(22), THREE.MathUtils.degToRad(64));
     camera.aspect = aspect; camera.fov = THREE.MathUtils.radToDeg(vfov); camera.updateProjectionMatrix();
     pitch = vfov / 2 + THREE.MathUtils.degToRad(1.5);
@@ -214,19 +220,21 @@ async function main() {
 
   let lastP = null;
   addEventListener('pointermove', (e) => {
-    const b = canvas.getBoundingClientRect(), x = (e.clientX - b.left) / b.width * cols, y = (1 - (e.clientY - b.top) / b.height) * rows;
+    const b = canvas.getBoundingClientRect(), x = e.clientX - b.left, y = e.clientY - b.top;
     if (lastP) {
-      const dx = x - lastP.x, dy = (y - lastP.y) * 2, len = Math.hypot(dx, dy); // cells are twice as tall as wide
-      if (len > .3) {
+      const dx = x - lastP.x, dy = y - lastP.y, len = Math.hypot(dx, dy);
+      if (len >= 2) {
         let a = Math.atan2(dy, dx); if (a < 0) a += Math.PI;
-        const dir = Math.round(a / (Math.PI / 4)) % 4, strength = Math.min(1, .35 + len / 5), rad = 2.6, steps = Math.ceil(len * 2);
+        const dir = Math.round(a / (Math.PI / 4)) % 4;     // 0 '-', 1 '\', 2 '|', 3 '/'
+        const rad = 20, strength = Math.min(1, .35 + len / 40), steps = Math.ceil(len / 4);
         for (let s = 0; s <= steps; s++) {
-          const px = lastP.x + (x - lastP.x) * s / steps, py = lastP.y + (y - lastP.y) * s / steps;
-          for (let cy = Math.floor(py - rad / 2); cy <= py + rad / 2; cy++) for (let cx = Math.floor(px - rad); cx <= px + rad; cx++) {
-            if (cx < 0 || cy < 0 || cx >= cols || cy >= rows) continue;
-            const d = Math.hypot(cx + .5 - px, (cy + .5 - py) * 2) / rad;
-            if (d > 1) continue;
-            const v = strength * (1 - d * .45), i = cy * cols + cx;
+          const px = lastP.x + dx * s / steps, py = lastP.y + dy * s / steps;
+          const c0 = Math.max(0, Math.floor((px - rad) / CW)), c1 = Math.min(cols - 1, Math.floor((px + rad) / CW));
+          const r0 = Math.max(0, Math.floor((py - rad) / CH)), r1 = Math.min(rows - 1, Math.floor((py + rad) / CH));
+          for (let ry = r0; ry <= r1; ry++) for (let cx = c0; cx <= c1; cx++) {
+            const d = Math.hypot(cx * CW + CW / 2 - px, ry * CH + CH / 2 - py);
+            if (d > rad) continue;
+            const v = strength * (1 - (d / rad) * .45), i = ry * cols + cx;
             if (v > wind[i]) { wind[i] = v; windDir[i] = dir; }
           }
         }
@@ -256,16 +264,20 @@ async function main() {
     }
     windTex.needsUpdate = true;
 
+    if (content) {
+      const sr = canvas.getBoundingClientRect(), inner = (content.firstElementChild || content).getBoundingClientRect();
+      ascii.uniforms.uCard.value.set(inner.left - sr.left - CARD_PAD_X, inner.top - sr.top - CARD_PAD_TOP, inner.right - sr.left + CARD_PAD_X);
+    }
+
     if (shadowTick++ % 3 === 0) sun.shadow.needsUpdate = true;
-    renderer.setRenderTarget(rt); renderer.setClearColor(0x1d6cc8, 0); renderer.clear(); renderer.render(scene, camera);
-    quad.material = ascii; renderer.setRenderTarget(art); renderer.render(post, postCam);
-    quad.material = tilt; renderer.setRenderTarget(null); renderer.render(post, postCam);
+    renderer.setRenderTarget(rt); renderer.setClearColor(0x4d9ee0, 0); renderer.clear(); renderer.render(scene, camera);
+    renderer.setRenderTarget(null); renderer.render(post, postCam);
   }
 
   placeCamera(0);
   try { await renderer.compileAsync(scene, camera); } catch { /* older browsers compile on first draw */ }
 
-  // Live loop. Slow machines drop the render size a step at a time; reduced-motion visitors get a still
+  // Live loop. Slow machines drop the scene resolution once; reduced-motion visitors get a still sky
   // (the pointer trail still answers them).
   let clock = 0, last = performance.now(), frames = 0, decided = false, tSum = 0, tN = 0;
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -274,7 +286,6 @@ async function main() {
     const dt = (now - last) / 1000; last = now;
     if (!still) clock += Math.min(.1, dt);
     drawFrame(clock);
-    if (frames === 1) canvas.classList.add('ready');
     if (++frames > 30 && !decided && !still && dt < .25) {
       tSum += dt; tN++;
       if (tN === 90) { decided = true; const avg = tSum / tN; if (avg > .022) { qScale = avg > .04 ? .45 : .7; resize(); } }
@@ -282,6 +293,6 @@ async function main() {
     requestAnimationFrame(loop);
   };
   requestAnimationFrame(loop);
-  if (location.search.includes('debug')) window.__sky = { renderer, scene, sun, camera, resize, rt, art, ascii, tilt, clouds };
+  if (location.search.includes('debug')) window.__sky = { renderer, scene, sun, camera, resize, rt, ascii, clouds };
 }
-main().catch((e) => { console.error(e); document.documentElement.classList.add('sky-failed'); });
+main().catch((e) => { console.error(e); document.getElementById('sky')?.style.setProperty('display', 'none'); });
