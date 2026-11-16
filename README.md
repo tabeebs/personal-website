@@ -22,19 +22,18 @@ Slow devices lower the scene resolution once. Reduced-motion visitors get a stil
 
 ## Layout
 
-The page is one screen tall plus the sky above the panel. At the top, the whole panel shows under the clouds. Scrolled to the bottom, the clouds have scrolled away but the panel still shows in full, sitting over the ground. The sky gap and the ground's height scale with the window (`--sky` and `--ground` in `style.css`).
+The page is one screen with no scrolling. The sky fills it from behind, the panel sits in the middle, and the ground runs along the bottom, so rain from a clicked cloud can be watched all the way down to the flowers it waters. The panel is a little see-through, like frosted glass, so the sky and the rain show faintly behind it. The sky gap and the ground's height scale with the window (`--sky` and `--ground` in `style.css`). On a screen too short for it all, the page grows and scrolls rather than overlap.
 
 ## Ground and meadow
 
-The page has a floor. The sky sits at the top, and at the very bottom the sky's tiles come back as pale green ground (`src/ground.js`), deepening downward with soft patches and a gently rolling top edge. A strip of crayon-drawn ASCII grass and flowers grows along it (`src/meadow.js`), in the same 8×12 tiles as the clouds.
+Along the bottom, the sky's tiles come back as pale green ground (`src/ground.js`), deepening downward with soft patches and a gently rolling top edge. A strip of crayon-drawn ASCII grass and flowers grows along it (`src/meadow.js`), in the same 8×12 tiles as the clouds. The ground is see-through above the grass, so rain shows falling through it.
 
 The flowers bloom where it rains:
 
-- **Rain from the sky:** click or tap the sky and rain falls from there. Hold to keep it raining, and drag to move the shower. The rain melts into the page, and a moment later a little cloud gathers over the same spot above the meadow and rains on the flowers below.
-- **Rain clouds at the meadow:** rain down here always comes from a cloud, drawn the way the sky draws its clouds and carrying a small patch of sky with it. Tap the space above the grass to call one (hold and drag to lead it), and every so often one drifts over by itself.
-- **Bloom:** watered flowers (daisies, tulips, lupins and forget-me-nots) open over about a second, stay open for a while, then close back into buds. Moving the pointer through the meadow bends the grass and makes the flowers lean.
+- **Rain:** click or tap the sky and rain falls from there, all the way down to the grass. Hold to keep it raining, and drag to move the shower. Every so often a passing shower falls from one of the clouds by itself.
+- **Bloom:** where the drops land they splash, and the flowers there (daisies, tulips, lupins and forget-me-nots) open over about a second, stay open for a while, then close back into buds. Moving the pointer through the meadow bends the grass and makes the flowers lean.
 
-The look comes from risograph crayon drawings. Fills are hatched with short vertical strokes (`| ! : ;`) over a pastel layer printed slightly out of register, with waxy grain and rounded edges. Everything redraws about eight times a second ("on twos"), so the drawing boils like hand-drawn animation. The palette lives in `src/crayon.js` and is shared with the doodles. The ground only draws while it's on screen.
+The look comes from risograph crayon drawings. Fills are hatched with short vertical strokes (`| ! : ;`) over a pastel layer printed slightly out of register, with waxy grain and rounded edges. Everything redraws about eight times a second ("on twos"), so the drawing boils like hand-drawn animation. The palette lives in `src/crayon.js` and is shared with the icons.
 
 ## Links
 

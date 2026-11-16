@@ -103,10 +103,16 @@ const vec3 DOT_L = vec3(120.,150.,172.)/255.;
 const vec3 DOT_D = vec3(41.,100.,144.)/255.;
 const vec3 WINDC = vec3(44.,98.,178.)/255.;
 ${palGlsl}
+// one glyph from the atlas, drawn into a cell (gv is the position inside the cell, 0..1)
+float glyph(float gl, vec2 gv, vec2 dx, vec2 dy){
+  float inside = step(0.,gv.x)*step(gv.x,1.)*step(0.,gv.y)*step(gv.y,1.);
+  return inside*smoothstep(.05,.95,textureGrad(uAtlas,vec2((gl+clamp(gv.x,0.,1.))/uN,clamp(gv.y,0.,1.)),dx/uN,dy).r);
+}
 float cover(vec2 uv, float lod){ return clamp((textureLod(uScene,uv,lod).a*16.-1.)/14.,0.,1.); }
 void main(){
   vec2 px = vec2(vUv.x, 1.-vUv.y)*uView;                // css px, y down
   vec2 g = px/uCell, cell = floor(g), gv = g-cell;
+  vec2 gdx = dFdx(g), gdy = dFdy(g);
   vec2 cuv = vec2((cell.x+.5)*uCell.x/uView.x, 1.-(cell.y+.5)*uCell.y/uView.y);
   ivec2 sz = textureSize(uScene,0);
   float lodC = log2(float(sz.x)/uGrid.x)+.05;
@@ -156,8 +162,6 @@ void main(){
     ink = WINDC; strength = min(1., wn.r*1.2); dotM = 0.;
     bg = mix(bg, DEEP, wn.r*.35*(1.-cov*.6));
   }
-  // rain (see meadow.js): a short streak per drop, over sky and cloud alike
-  if(wn.b > .03){ gl = floor(wn.a*255.+.5); ink = PAL[12]; strength = min(1., wn.b*1.15); dotM = 0.; small = 1.; bg = mix(bg, DEEP, wn.b*.22); }
   vec3 c = bg;
   if(gl >= 0.){
     vec2 dx = dFdx(g), dy = dFdy(g);
@@ -175,18 +179,29 @@ void main(){
   // melt into the page toward the bottom
   c = mix(c, BG, smoothstep(.36, .8, vy));
 
-  // soft panel behind the content, its top edge wavering like a cloud bank
+  // soft panel behind the content, its top edge wavering like a cloud bank; a little see-through, like frosted
+  // glass, so the sky and the rain show faintly behind it
+  float panel = 0.;
   if(uCard.y > -9000.){
     float wob = (fbm(vec2(px.x/70. - uTime*.05, 3.3)) - .5)*18. + (vn(vec2(px.x/16. + uTime*.1, 8.1)) - .5)*6.;
     float d = max(max(uCard.x - px.x, px.x - uCard.z), (uCard.y + wob) - px.y);
-    c = mix(c, BG, smoothstep(14., -12., d));
+    panel = smoothstep(14., -12., d);
+    c = mix(c, BG, panel*.88);
+  }
+
+  // rain (see meadow.js), drawn last so it is seen falling all the way down to the meadow; fainter behind the panel
+  if(wn.b > .03){
+    float behind = mix(1., .4, panel), k = min(1., wn.b*1.15);
+    c = mix(c, DEEP, wn.b*.18*(1.-panel));                  // the tile it falls through takes a little blue
+    c = mix(c, PAL[12], glyph(floor(wn.a*255.+.5), gv, gdx, gdy)*k*behind);
   }
 
   outColor = vec4(c,1.);
 }`;
 
 async function main() {
-  await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0)));
+  // start after the first frame, or shortly anyway if the page opened in a background tab
+  await new Promise((r) => { requestAnimationFrame(() => setTimeout(r, 0)); setTimeout(r, 400); });
   const canvas = document.getElementById('sky');
   const content = document.getElementById('content');
   if (!canvas) return;
@@ -227,13 +242,16 @@ async function main() {
   // pointer wind, one texel per glyph cell (row 0 is the top row)
   let cols = 1, rows = 1, wind = new Float32Array(1), windDir = new Uint8Array(1);
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  // the ground at the bottom of the page; rain that falls here soaks down to its meadow
+  // the ground along the bottom of the screen; rain from the sky falls all the way down to its meadow
   const groundEl = document.getElementById('ground');
   let ground = null;
   try { if (groundEl) ground = createGround(groundEl, { reduced: still, debug: DEBUG }); }
   catch (e) { console.error(e); groundEl.style.display = 'none'; }
-  // rain falls from where the sky is clicked (hold to keep it raining, drag to move it) and melts into the page
-  const rain = createRain({ CW, CH, stopAt: () => H * (.4 + Math.random() * .14), onLand: (x) => ground?.soakFrom(x + canvas.getBoundingClientRect().left) });
+  // rain falls from where the sky is clicked (hold to keep it raining, drag to move it), and now and then from a
+  // cloud by itself, down to the grass, where the flowers it lands on drink it
+  const grassY = () => (ground ? ground.grassY() - canvas.getBoundingClientRect().top : H * .9);
+  const rain = createRain({ CW, CH, stopAt: () => grassY() - CH * (.4 + Math.random() * 1.4), onLand: (x) => ground?.land(x + canvas.getBoundingClientRect().left) });
+  let nextShower = performance.now() / 1000 + 5;
   const press = { down: false, x: 0, y: 0, acc: 0 };
   function setGrid(c, r) {
     cols = c; rows = r; wind = new Float32Array(c * r); windDir = new Uint8Array(c * r);
@@ -284,7 +302,7 @@ async function main() {
       }
     }
     lastP = { x, y };
-    if (press.down) { press.x = x; press.y = Math.min(y, H * .3); }
+    if (press.down) { press.x = x; press.y = Math.min(y, grassY() - 60); }
   }, { passive: true });
   document.addEventListener('mouseleave', () => { lastP = null; press.down = false; });
   addEventListener('pointerup', () => { press.down = false; });
@@ -293,8 +311,8 @@ async function main() {
   addEventListener('pointerdown', (e) => {
     const b = canvas.getBoundingClientRect(), x = e.clientX - b.left, y = e.clientY - b.top;
     if (y > b.height || e.target.closest('a, button')) return;
-    if (y < H * .38) {   // rain falls from where the sky was clicked
-      if (still) ground?.soakFrom(e.clientX);
+    if (y < grassY() - 60) {   // rain falls from where the sky was clicked
+      if (still) ground?.land(e.clientX);
       else { rain.burst(x, y, performance.now() / 1000); Object.assign(press, { down: true, x, y, acc: 0 }); }
     }
     // a gust: strokes fanning out from the click, clouds blown back
@@ -360,6 +378,17 @@ async function main() {
     }
     const now = performance.now() / 1000, rdt = realDt || .016;
     if (press.down) { press.acc += rdt * 26; while (press.acc >= 1) { press.acc -= 1; rain.drop(press.x + (Math.random() * 2 - 1) * 26, press.y + Math.random() * 10, now); } }
+    // a passing shower now and then, from one of the clouds in view
+    if (!still && now > nextShower) {
+      nextShower = now + 10 + Math.random() * 8;
+      const seen = [];
+      for (const c of clouds.field) {
+        v3.set(c.x, c.y, c.z).project(camera);
+        const sx = (v3.x * .5 + .5) * W, sy = (.5 - v3.y * .5) * H;
+        if (v3.z < 1 && sx > 30 && sx < W - 30 && sy > 10 && sy < grassY() * .45) seen.push([sx, sy]);
+      }
+      if (seen.length) { const [sx, sy] = seen[Math.floor(Math.random() * seen.length)]; rain.burst(sx, sy + 10, now, 16, 30); }
+    }
     rain.update(now, rdt);
     const rainV = rain.rain, rainG = rain.glyph;
     for (let i = 0; i < wind.length; i++) {

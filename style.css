@@ -17,26 +17,25 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* The page is a column: sky behind the top, content, then the ground as the floor at the very bottom.
-   It is one screen plus the sky above the panel, so at the top the whole panel shows under the clouds, and
-   scrolled to the bottom the clouds have gone but the panel still shows, sitting over the ground. */
+/* One screen, no scrolling: the sky fills it from behind, the panel sits in the middle, and the ground runs
+   along the bottom, so rain from a clicked cloud can be watched all the way down to the flowers it waters.
+   (On a screen too short for it all, the page grows and scrolls rather than overlap.) */
 :root {
-  --sky: clamp(150px, 27vh, 300px);       /* sky above the panel's content */
-  --ground: clamp(230px, 28vh, 300px);    /* height of the ground band */
+  --sky: clamp(80px, 18vh, 240px);        /* sky above the panel's content */
+  --ground: clamp(156px, 24vh, 260px);    /* height of the ground band */
 }
 body {
-  display: flex;
-  flex-direction: column;
-  min-height: calc(100vh + var(--sky) - 32px);
-  min-height: calc(100dvh + var(--sky) - 32px);
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 /* The sky sits behind the page and scrolls away with it. */
 #sky {
   position: absolute;
-  inset: 0 0 auto 0;
+  inset: 0;
   width: 100%;
-  height: 100vh;
+  height: 100%;
   display: block;
   z-index: 0;
   pointer-events: none;
@@ -48,17 +47,19 @@ body {
   width: 100%;
   max-width: 628px;
   margin: 0 auto;
-  padding: var(--sky) 16px 32px;
-  flex: none;
+  padding: var(--sky) 16px calc(var(--ground) - 24px);   /* the ground's top rows are open air */
 }
 
-/* The ground (src/ground.js): pale green tiles with the crayon meadow growing on top. */
+/* The ground (src/ground.js): pale green tiles with the crayon meadow growing on top. It is see-through
+   above the grass, so the sky's rain shows through it. */
 #ground {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
   display: block;
   width: 100%;
   height: var(--ground);
-  margin-top: auto;
-  flex: none;
+  z-index: 0;
+  pointer-events: none;
 }
 
 a { color: inherit; }

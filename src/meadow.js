@@ -1,16 +1,13 @@
 // Rain and the meadow.
 //
-// createRain: rain falling through a glyph grid. In the sky it falls from wherever the sky is clicked (hold to
-// keep it raining, drag to move the shower) and soaks into the page as it melts away; every drop that lands
-// reports where, so the meadow at the bottom of the page can drink it.
+// createRain: rain falling through a glyph grid. It falls from wherever the sky is clicked (hold to keep it
+// raining, drag to move the shower), and every so often from one of the clouds by itself, all the way down the
+// page to the meadow; every drop that lands reports where, so the meadow can drink it.
 //
 // createMeadow: a strip of crayon-hatched ASCII grass and flowers at the bottom of the page, drawn in the same
 // 8x12 tiles as the sky from a small texture this module fills every frame (one texel per glyph cell, row 0 is
-// the ground row). Rain here always comes from a little cloud that drifts in above the meadow, drawn the way
-// the sky draws its clouds, with a patch of sky around it. One forms where rain from the sky soaks down, where
-// the space above the meadow is tapped (hold and drag to lead it), and every so often on its own. Watered flowers open
-// over a second or so, stay open a while, then close back into buds. Brushing the pointer through the meadow
-// bends the grass and makes the flowers lean.
+// the ground row). Flowers bloom where the sky's rain lands on them, stay open a while, then close back into
+// buds. Brushing the pointer through the meadow bends the grass and makes the flowers lean.
 import { GI, HATCH, C, hash } from './crayon.js';
 
 export const MROWS = 9;           // meadow rows above (and including) the ground row
@@ -72,29 +69,15 @@ export function createMeadow({ CW, CH, reduced = false }) {
   let base = -1, x0 = 0, x1 = 0, key = '';
   let cells = new Uint8Array(4 * MROWS);
   let flowers = [], grassLean = new Float32Array(1);
-  const splashes = [], soak = [], clouds = [];
-  const CLOUD_Y = 48;                // cloud centre, px from the top of the canvas
-  const press = { down: false, x: 0, y: 0, acc: 0 };
-  let lastMove = null, nextShower = 4, now = 0;
+  const splashes = [];
+  let lastMove = null, now = 0;
 
   const groundY = () => base * CH;   // top of the ground row, in this canvas's px
-
-  // local rain: a sprinkle from a tap, or a passing shower; drops splash in the grass
-  const rain = createRain({
-    CW, CH,
-    stopAt: () => groundY() - CH * (.6 + Math.random() * 1.6),
-    onLand: (x, y, t) => {
-      const col = Math.floor(x / CW);
-      splashes.push({ col, k: clamp(base - Math.floor(y / CH), 1, MROWS - 1), ttl: .32 });
-      water(col, t);
-    },
-  });
 
   function resize(c, r) {
     cols = c;
     cells = new Uint8Array(cols * MROWS * 4);
     grassLean = new Float32Array(cols);
-    rain.resize(c, r);
     key = '';
   }
 
@@ -128,31 +111,16 @@ export function createMeadow({ CW, CH, reduced = false }) {
       if (Math.abs(f.col - col) <= 2) { f.target = 1; f.until = Math.max(f.until, t + stay + Math.random() * 12); }
     }
   }
-  // A rain cloud over x. A cloud already nearby just rains for longer, so a burst of rain makes one cloud.
-  function cloudAt(x, t, dur = 1.6) {
-    const near = clouds.find((c) => Math.abs(c.x - x) < 64 && c.until > t - .2);
-    if (near) { near.until = Math.max(near.until, t + dur); return near; }
-    if (clouds.length >= 3) return null;
-    const c = { x, w: 96 + Math.random() * 28, born: t, until: t + .45 + dur, a: 0, acc: 0, vx: 4 + Math.random() * 4 };
-    clouds.push(c);
-    return c;
-  }
-  // rain from the sky soaks down to the meadow: a cloud gathers over the spot and rains on it
-  function soakFrom(x, t) {
-    if (reduced) { water(Math.floor(x / CW), t, 28); return; }
-    soak.push({ at: t + .25 + Math.random() * .3, x });
+  // a raindrop from the sky landing at x: a little splash, and the flowers around it drink
+  function land(x, t) {
+    if (base < 0) return;
+    const col = Math.floor(x / CW);
+    splashes.push({ col, k: 1 + Math.floor(Math.random() * 2), ttl: .32 });
+    water(col, t);
   }
 
   // ---- pointer, in this canvas's px ----
-  function down(x, y) {
-    if (base < 0 || y < 0 || y > groundY() - CH) return false;
-    press.down = true; press.x = x; press.acc = 0;
-    if (reduced) { water(Math.floor(x / CW), now); return true; }
-    press.cloud = cloudAt(x, now, 1.4);
-    return true;
-  }
   function move(x, y) {
-    if (press.down) press.x = x;
     if (lastMove && base >= 0) {
       const dx = x - lastMove.x, gy = groundY();
       // brushing through the meadow: grass bends and flowers lean the way the pointer moved
@@ -171,8 +139,7 @@ export function createMeadow({ CW, CH, reduced = false }) {
     }
     lastMove = { x, y };
   }
-  function up() { press.down = false; press.cloud = null; }
-  function leave() { lastMove = null; press.down = false; press.cloud = null; }
+  function leave() { lastMove = null; }
 
   // ---- drawing into the cell texture ----
   function put(col, k, glyph, ink, fill, strength) {
@@ -235,33 +202,6 @@ export function createMeadow({ CW, CH, reduced = false }) {
     cells.fill(0);
     if (base < 0) return;
 
-    // a light shower passes over by itself every so often, over a flower that has closed
-    if (!reduced && t > nextShower) {
-      nextShower = t + 11 + Math.random() * 9;
-      const closed = flowers.filter((f) => f.target === 0);
-      const f = closed.length ? closed[Math.floor(Math.random() * closed.length)] : flowers[Math.floor(Math.random() * flowers.length)];
-      if (f) cloudAt((f.col + .5) * CW - 20, t, 2);
-    }
-    // holding the pointer keeps the cloud raining, and it follows the pointer
-    if (press.down && press.cloud) {
-      const c = press.cloud;
-      c.until = Math.max(c.until, t + .5);
-      c.x += (press.x - c.x) * Math.min(1, dt * 3);
-    }
-    for (let i = soak.length - 1; i >= 0; i--) if (soak[i].at <= t) { cloudAt(soak[i].x, t, 1.5); soak.splice(i, 1); }
-    // clouds gather, drift, rain from their base, then thin away
-    for (let i = clouds.length - 1; i >= 0; i--) {
-      const c = clouds[i], on = t < c.until;
-      c.a = on ? Math.min(1, c.a + dt / .4) : Math.max(0, c.a - dt / .7);
-      if (!(press.down && press.cloud === c)) c.x += c.vx * dt;
-      if (on && c.a > .6) {
-        c.acc += dt * 20;
-        while (c.acc >= 1) { c.acc -= 1; rain.drop(c.x + (Math.random() * 2 - 1) * c.w * .3, CLOUD_Y + c.w * .1, t, 330 + Math.random() * 90); }
-      }
-      if (!on && c.a <= 0) clouds.splice(i, 1);
-    }
-    rain.update(t, dt);
-
     // flowers open toward their target and close again once their water runs out
     for (const f of flowers) {
       if (f.target === 1 && t > f.until) f.target = 0;
@@ -293,9 +233,9 @@ export function createMeadow({ CW, CH, reduced = false }) {
   }
 
   return {
-    resize, setGround, update, down, move, up, leave, soakFrom,
-    get clouds() { return clouds; }, CLOUD_Y,
-    get cells() { return cells; }, get rain() { return rain.rain; }, get rainG() { return rain.glyph; },
+    resize, setGround, update, move, leave, land,
+    get base() { return base; },
+    get cells() { return cells; },
     debug: () => ({ flowers, base, x0, x1 }),
   };
 }
