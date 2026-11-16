@@ -5,6 +5,8 @@
 // At rest a drawing boils slowly. Hovering its row (or focusing its link) boils it on twos, slides the colour
 // layer into register, and the drawing comes to life: the resume writes itself out over a second page, the
 // Octocat perks its ears and lifts its tail, the dot on the LinkedIn i hops.
+// Each row also has a leader line: a row of small ASCII dots on the sky's 8px rhythm. As its icon comes to
+// life, a crayon dash in the icon's colour sweeps along it from the name and finishes in a little arrow.
 import { PAL, C, BOIL_MS, hash } from './crayon.js';
 
 const SIZE = 36;                         // drawings are authored in this space
@@ -78,6 +80,10 @@ const DRAWINGS = {
 };
 
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
+// each icon's own crayon, used for its leader line
+const INK = { github: C.navy, resume: C.teal, linkedin: C.blue };
+const DOT = '#b4bcc6';                  // the leader's resting dots, a light grey like the sky's small dots
+const STEP = 8;                         // one dot per sky cell width
 const insideShape = (it, x, y) => inside(it.pts, x, y) && !it.holes.some((h) => inside(h, x, y));
 
 function inside(pts, x, y) {
@@ -102,9 +108,53 @@ function doodle(el) {
   };
   size();
 
+  // the leader line in this row
+  const ruleEl = el.closest('li')?.querySelector('.rule');
+  const rule = ruleEl ? document.createElement('canvas') : null;
+  const rctx = rule?.getContext('2d');
+  let rw = 0;
+  if (rule) {
+    ruleEl.appendChild(rule);
+    new ResizeObserver(() => paintRule(frame)).observe(ruleEl);
+  }
+  function paintRule(f) {
+    if (!rctx) return;
+    // keep the canvas matched to the line's width
+    const w = ruleEl.clientWidth;
+    if (w !== rw || rule.width !== Math.round(w * dpr)) { rw = w; rule.width = Math.round(rw * dpr); rule.height = Math.round(12 * dpr); }
+    if (rw < STEP) return;
+    const j = (k, a) => (hash(f, k, 77) - .5) * 2 * a;
+    rctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    rctx.clearRect(0, 0, rw, 12);
+    const n = Math.floor((rw - 10) / STEP), reach = ease(t) * (n + 1), ink = PAL[INK[el.dataset.doodle] ?? C.navy];
+    rctx.lineCap = 'round';
+    for (let i = 0; i <= n; i++) {
+      const x = 3 + i * STEP;
+      if (i < reach - .5) {
+        // crayon dash, two waxy passes
+        rctx.strokeStyle = ink;
+        for (let pass = 0; pass < 2; pass++) {
+          rctx.lineWidth = pass ? .7 : 1.35; rctx.globalAlpha = pass ? .5 : .9;
+          rctx.beginPath(); rctx.moveTo(x - 2.6 + j(i * 4 + pass, .5), 6 + j(i * 4 + 2 + pass, .55)); rctx.lineTo(x + 2.6 + j(i * 4 + 1 + pass, .5), 6 + j(i * 4 + 3 + pass, .55)); rctx.stroke();
+        }
+        rctx.globalAlpha = 1;
+      } else {
+        rctx.fillStyle = DOT;
+        rctx.fillRect(x - .75, 5.25, 1.5, 1.5);
+      }
+    }
+    // the arrow rides the front of the dash and comes to rest at the end
+    if (t > .02) {
+      const x = Math.min(3 + (reach - .5) * STEP + 3, rw - 3);
+      rctx.strokeStyle = ink; rctx.lineWidth = 1.35; rctx.globalAlpha = clamp01(t * 3);
+      rctx.beginPath(); rctx.moveTo(x - 3.2 + j(90, .4), 2.6 + j(91, .4)); rctx.lineTo(x + j(92, .3), 6); rctx.lineTo(x - 3.2 + j(93, .4), 9.4 + j(94, .4)); rctx.stroke();
+      rctx.globalAlpha = 1;
+    }
+  }
+
   let t = 0, target = 0, frame = 0, visible = true, timer = 0;
 
-  function paint() {
+  let paint = function () {
     const f = frame, j = (k, a = .35) => (hash(f, k, 31) - .5) * 2 * a;   // per-drawing jitter
     const k = dpr * SHOWN / SIZE;
     ctx.setTransform(k, 0, 0, k, 0, 0);
@@ -159,7 +209,10 @@ function doodle(el) {
       }
       ctx.globalAlpha = 1;
     });
-  }
+  };
+
+  const paintIcon = paint;
+  paint = () => { paintIcon(); paintRule(frame); };
 
   // On twos while alive, a slow shimmer at rest, nothing when off screen.
   function tick() {

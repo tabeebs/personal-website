@@ -84,8 +84,10 @@ a { color: inherit; }
 
 .collections { margin-top: 36px; }
 .collections ul { list-style: none; padding: 0; margin: 0; }
-.collections li { display: flex; align-items: center; gap: 14px; font-size: 14px; padding: 5px 0; }
-.collections li a { text-decoration: none; }
+/* each row is one link: icon, name, then a leader line that fills in on hover */
+.collections li { font-size: 14px; }
+.collections li a { display: flex; align-items: center; gap: 14px; padding: 5px 0; text-decoration: none; border-radius: 6px; }
+.collections li a:focus-visible { outline: 2px solid #2d3a68; outline-offset: 4px; }
 
 /* Crayon icons beside each link (src/doodles.js). They tip and lift a little on hover. */
 .doodle {
@@ -99,5 +101,6 @@ a { color: inherit; }
 .collections li:hover .doodle,
 .collections li:focus-within .doodle { transform: translateY(-2px) rotate(-5deg); }
 @media (prefers-reduced-motion: reduce) { .doodle { transition: none; } }
-.rule { flex: 1; height: 1px; background: var(--rule); }
+.rule { flex: 1; height: 12px; min-width: 24px; }
+.rule canvas { display: block; width: 100%; height: 12px; }
 

@@ -44,7 +44,7 @@ The links (GitHub, Resume, LinkedIn) each have a crayon rendition of their icon 
 - **GitHub:** the Octocat mark.
 - **LinkedIn:** the rounded "in" square.
 
-The Octocat and the letters are bare paper left inside the hatched fill. At rest an icon boils slowly. Hovering its row, focusing its link or tapping it brings it to life: the colour layer slides into register, the resume writes itself out over a second page, the Octocat perks its ears and lifts its tail, and the dot on the "i" hops. Off-screen icons don't redraw.
+The Octocat and the letters are bare paper left inside the hatched fill. At rest an icon boils slowly. Hovering its row, focusing its link or tapping it brings it to life: the colour layer slides into register, the resume writes itself out over a second page, the Octocat perks its ears and lifts its tail, and the dot on the "i" hops. Each row is one link, and its leader line is a row of small ASCII dots on the sky's 8px rhythm. As the icon comes to life, a crayon dash in the icon's colour sweeps along it and ends in a little arrow. Off-screen icons don't redraw.
 
 Reduced-motion visitors get still drawings with no boil, and tapping the sky waters the flowers without animated rain.
 
