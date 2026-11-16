@@ -315,7 +315,7 @@ async function main() {
   addEventListener('pointerdown', (e) => {
     const b = canvas.getBoundingClientRect(), x = e.clientX - b.left, y = e.clientY - b.top;
     if (y > b.height || e.target.closest('a, button')) return;
-    if (e.target.closest('p, .name, .role, h1, h2, h3')) return;   // a press on the text selects it, as usual
+    if (e.target.closest('p, h1, h2, h3')) return;   // a press on the text selects it, as usual
     document.documentElement.classList.add('playing');
     getSelection()?.removeAllRanges();
     if (y < grassY() - 60) {   // rain falls from where the sky was clicked
