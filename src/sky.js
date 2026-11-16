@@ -46,13 +46,14 @@ function buildDome() {
 // Each cumulus is a cluster of squashed spheres: a flat-ish base, a domed top, the biggest puffs in the middle.
 function buildClouds(scene) {
   const field = [], puffs = [];
-  const N = COARSE ? 30 : 48;
+  const N = COARSE ? 26 : 42;
   for (let i = 0; i < N; i++) {
     // spread the clouds by angle above the horizon, so the whole sky has some; nearer ones are smaller
-    const el = THREE.MathUtils.degToRad(3 + Math.pow(rnd(), .9) * 46), d = 170 + rnd() * 560;
-    const z = -d * Math.cos(el), lim = Math.abs(z) * .95 + 90;
-    const w = (22 + rnd() * 40) * Math.pow(d / 420, .6), base = d * Math.sin(el);
-    const c = { x: (rnd() * 2 - 1) * lim, y: base, z, lim, first: puffs.length, n: Math.round(16 + w * .9) };
+    // weighted toward high in the sky, where the page shows the most of it (the top of the view sits 50-65 deg up)
+    const el = THREE.MathUtils.degToRad(4 + (1 - Math.pow(rnd(), 1.5)) * 64), d = 190 + rnd() * 520;
+    const z = -d * Math.cos(el), lim = d * 1.05 + 90;
+    const w = (34 + rnd() * 62) * Math.pow(d / 420, .6), base = d * Math.sin(el);
+    const c = { x: (rnd() * 2 - 1) * lim, y: base, y0: base, z, lim, vx: 0, vy: 0, first: puffs.length, n: Math.round(16 + w * .9) };
     for (let p = 0; p < c.n; p++) {
       const u = rnd() * 2 - 1, prof = 1 - u * u;
       const r = (2.4 + rnd() * 3.4) * (.5 + .7 * prof) * Math.sqrt(w / 26);
@@ -68,10 +69,11 @@ function buildClouds(scene) {
 }
 
 // ---------- glyph pass ----------
-// The Seed Data diorama's per-cell sampling (scene at a few pixels per cell, averaged with mip LOD, material
-// class in alpha, brightness and edge gradient from the neighbours), composited in the original light style:
-// pale blue tiles with white seams, small dots in open sky, grey glyphs on white cloud, melting into the page.
-const GLYPHS = " .'`,:;-~=+*oOsS$%&8#@/\\|_^v\u2014\"Y";
+// Reads the lit scene one cell at a time, as on the Seed Data diorama (mip-averaged colour, material class in
+// alpha, so a cell knows how much of it is cloud and how its neighbours look). The look matches the reference:
+// cyan tiles with white seams, drifting patches of deeper blue, a small dot per tile (a heavier square in the
+// deep patches), and clouds as clean white tiles outlined in ( ) ; : ~ glyphs, heavier o 8 in their shaded undersides.
+const GLYPHS = " .'`,:;-~_()o8O/\\|+*";
 const GI = Object.fromEntries([...GLYPHS].map((c, i) => [c, i]));
 const gg = (c) => GI[c].toFixed(1);
 function buildAtlas() {
@@ -80,11 +82,11 @@ function buildAtlas() {
   const x = c.getContext('2d');
   x.fillStyle = '#000'; x.fillRect(0, 0, c.width, c.height); x.fillStyle = '#fff'; x.textAlign = 'center'; x.textBaseline = 'middle';
   x.font = '100px Menlo, Monaco, Consolas, "Cascadia Mono", "DejaVu Sans Mono", "Liberation Mono", monospace';
-  [...GLYPHS].forEach((ch, i) => { if (ch === '\u2014') x.fillRect(i * tw, th * .45, tw, th * .1); else x.fillText(ch, (i + .5) * tw, th * .52); });
+  [...GLYPHS].forEach((ch, i) => x.fillText(ch, (i + .5) * tw, th * .5));
   const t = new THREE.CanvasTexture(c); t.generateMipmaps = true; t.minFilter = THREE.LinearMipmapLinearFilter; t.magFilter = THREE.LinearFilter; t.anisotropy = 8; t.flipY = false;
   return t;
 }
-const CW = 8, CH = 12;                       // glyph cell in css px, as in the original sky
+const CW = 8, CH = 12;                       // glyph cell in css px, as in the reference
 const CARD_PAD_X = 64, CARD_PAD_TOP = 56;    // the soft white panel reaches this far past the text column
 const asciiFrag = /* glsl */`
 precision highp float;
@@ -94,55 +96,86 @@ float h21(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
 float vn(vec2 p){ vec2 i=floor(p),f=fract(p); f=f*f*(3.-2.*f); return mix(mix(h21(i),h21(i+vec2(1,0)),f.x),mix(h21(i+vec2(0,1)),h21(i+vec2(1,1)),f.x),f.y); }
 float fbm(vec2 p){ return vn(p)*.55 + vn(p*2.1+5.2)*.3 + vn(p*4.3+9.1)*.15; }
 float lum(vec3 c){ return dot(c,vec3(.25,.6,.15)); }
-vec3 tone(vec3 c){
-  if(any(isnan(c)) || any(isinf(c))) c = vec3(0.);
-  return pow(clamp(c,0.,1.), vec3(1./2.2));
-}
-const vec3 BG = vec3(249./255.);
+vec3 tone(vec3 c){ if(any(isnan(c)) || any(isinf(c))) c = vec3(0.); return pow(clamp(c,0.,1.), vec3(1./2.2)); }
+// palette sampled from the reference video
+const vec3 BG    = vec3(249.)/255.;
+const vec3 TOP   = vec3(160.,212.,238.)/255.;   // typical tile up high
+const vec3 DEEP  = vec3(103.,179.,215.)/255.;   // the deep patches
+const vec3 LOW   = vec3(228.,240.,246.)/255.;   // pale, lower down
+const vec3 CLOUD = vec3(252.,252.,253.)/255.;
+const vec3 INK   = vec3(108.,118.,132.)/255.;   // cloud glyphs
+const vec3 DOT_L = vec3(120.,150.,172.)/255.;
+const vec3 DOT_D = vec3(41.,100.,144.)/255.;
+const vec3 WINDC = vec3(44.,98.,178.)/255.;
+float cover(vec2 uv, float lod){ return clamp((textureLod(uScene,uv,lod).a*16.-1.)/14.,0.,1.); }
 void main(){
   vec2 px = vec2(vUv.x, 1.-vUv.y)*uView;                // css px, y down
   vec2 g = px/uCell, cell = floor(g), gv = g-cell;
   vec2 cuv = vec2((cell.x+.5)*uCell.x/uView.x, 1.-(cell.y+.5)*uCell.y/uView.y);
   ivec2 sz = textureSize(uScene,0);
   float lodC = log2(float(sz.x)/uGrid.x)+.05;
-  vec3 col = tone(textureLod(uScene,cuv,lodC).rgb);
-  float cls = floor(texelFetch(uScene,ivec2(cuv*vec2(sz)),0).a*16.+.5);
-  float L = lum(col);
+  vec4 sc = textureLod(uScene,cuv,lodC);
+  float cov = clamp((sc.a*16.-1.)/14.,0.,1.);           // how much of this cell is cloud
   vec2 e = uCell/uView;
-  float lx0=lum(tone(textureLod(uScene,cuv-vec2(e.x,0),lodC).rgb)), lx1=lum(tone(textureLod(uScene,cuv+vec2(e.x,0),lodC).rgb));
-  float ly0=lum(tone(textureLod(uScene,cuv+vec2(0,e.y),lodC).rgb)), ly1=lum(tone(textureLod(uScene,cuv-vec2(0,e.y),lodC).rgb));
-  vec2 grad = vec2(lx1-lx0,(ly1-ly0)*.66); float mag = length(grad);
-  float a4 = mod(atan(-grad.y,grad.x)+.3927,3.14159)/.7854;
-  float edgeG = a4<1.?${gg('|')}:a4<2.?${gg('\\')}:a4<3.?${gg('-')}:${gg('/')};
+  float cl = cover(cuv-vec2(e.x,0),lodC), cr = cover(cuv+vec2(e.x,0),lodC);
+  float cu = cover(cuv+vec2(0,e.y),lodC), cd = cover(cuv-vec2(0,e.y),lodC);
+  float vy = px.y/uView.y, h = h21(cell);
 
-  float gl; float strength; vec3 ink;
-  if(cls<1.5){        // open sky: a small dot per tile, a heavier one where the blue runs deep
-    gl = L<.5?${gg(':')}:${gg('.')};
-    ink = col*.55; strength = .75;
-  } else {            // cloud: bright tops stay clean, the shaded body fills in with heavier glyphs
-    float s = 1.-L;
-    gl = s<.05?${gg(' ')}:s<.11?${gg('.')}:s<.17?${gg(':')}:s<.23?${gg('~')}:s<.3?${gg('o')}:${gg('O')};
-    if(mag>.12 && s>.08) gl = edgeG;
-    ink = col*.7; strength = .65;
+  // sky tiles: deeper toward the top, with big soft patches of deeper blue drifting with the wind
+  float pn = fbm(cell*vec2(.032,.07) + vec2(-uTime*.09, uTime*.012));
+  float depth = clamp((pn-.42)*2.3 + (1.-smoothstep(0.,.42,vy))*.55 - .12, 0., 1.);
+  vec3 sky = mix(mix(LOW, TOP, smoothstep(.42,.06,vy)), DEEP, smoothstep(.45,1.,depth));
+  sky *= 1. + (h-.5)*.035;                               // a little tile-to-tile grain
+  vec3 bg = mix(sky, CLOUD, smoothstep(.08,.55,cov));
+
+  float gl = -1.; vec3 ink = INK; float strength = .9;
+  float dotM = 0.; vec3 dotC = DOT_L;
+  if(cov < .1){
+    // the dot: tiny and pale in light tiles, a heavier dark square in the deep patches
+    bool deep = depth > .62;
+    vec2 q = abs(gv*uCell - uCell*.5 + vec2(.5,0.));
+    float hs = deep ? 1.3 : .8;
+    dotM = 1. - smoothstep(hs-.5, hs+.5, max(q.x,q.y));
+    dotC = deep ? DOT_D : DOT_L; strength = deep ? .85 : .7;
+  } else {
+    float shade = clamp((1.-lum(tone(sc.rgb)))*1.5, 0., 1.);   // 0 sunlit .. 1 deep underside
+    float open = min(min(cl,cr),min(cu,cd));
+    if(cov < .6 || open < .25){
+      // outline: which side is open sky decides the glyph
+      vec2 gc = vec2(cr-cl, cu-cd);
+      if(cov < .3) gl = h<.4?${gg('.')}:h<.7?${gg("'")}:h<.85?${gg('`')}:${gg(',')};
+      else if(abs(gc.x)*1.5 > abs(gc.y)) gl = gc.x>0. ? (h<.75?${gg('(')}:${gg(':')}) : (h<.75?${gg(')')}:${gg(';')});
+      else if(gc.y > 0.) gl = h<.45?${gg('~')}:h<.75?${gg('_')}:${gg('o')};       // underside edge
+      else gl = h<.5?${gg('.')}:h<.8?${gg(':')}:${gg("'")};                        // top edge
+      if(shade > .55 && gc.y > 0.) gl = h<.5?${gg('8')}:${gg('o')};
+    } else {
+      // body: clean white where the sun hits, filling in toward the shaded base
+      float s = shade + (h-.5)*.12;
+      gl = s<.3?-1.:s<.4?(h<.45?${gg('.')}:-1.):s<.5?${gg(':')}:s<.6?${gg(';')}:s<.72?${gg('o')}:${gg('8')};
+    }
   }
-  // pointer wind: a short trail of strokes in the direction of travel
+  // pointer wind: a short trail of strokes in the direction of travel, deepening the tiles it crosses
   vec4 wn = texelFetch(uWind, ivec2(cell), 0);
   if(wn.r > .08){
     float d = floor(wn.g*4.+.5);
     gl = d<.5?${gg('-')}:d<1.5?${gg('\\')}:d<2.5?${gg('|')}:${gg('/')};
-    ink = vec3(.17,.38,.70); strength = min(1., wn.r*1.15);
-    col = mix(col, col*.86, wn.r*.5);
+    ink = WINDC; strength = min(1., wn.r*1.2); dotM = 0.;
+    bg = mix(bg, DEEP, wn.r*.35*(1.-cov*.6));
   }
-  vec2 dx = dFdx(g), dy = dFdy(g);
-  float m = smoothstep(.05,.95,textureGrad(uAtlas,vec2((gl+gv.x)/uN,gv.y),dx/uN,dy).r);
-  vec3 c = mix(mix(col, vec3(1.), .1), ink, m*strength);
+  vec3 c = bg;
+  if(gl >= 0.){
+    vec2 dx = dFdx(g), dy = dFdy(g);
+    float m = smoothstep(.05,.95,textureGrad(uAtlas,vec2((gl+gv.x)/uN,gv.y),dx/uN,dy).r);
+    c = mix(bg, ink, m*strength);
+  }
+  c = mix(c, dotC, dotM*strength);
 
   // thin white seams between tiles
   vec2 cp = gv*uCell;
-  c = mix(c, vec3(1.), max(step(uCell.x-1., cp.x), step(uCell.y-1., cp.y))*.78);
+  c = mix(c, vec3(1.), max(step(uCell.x-1., cp.x), step(uCell.y-1., cp.y))*.8);
 
   // melt into the page toward the bottom
-  c = mix(c, BG, smoothstep(.5, .9, px.y/uView.y));
+  c = mix(c, BG, smoothstep(.36, .8, vy));
 
   // soft panel behind the content, its top edge wavering like a cloud bank
   if(uCard.y > -9000.){
@@ -163,21 +196,20 @@ async function main() {
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
 
   const scene = new THREE.Scene();
-  scene.fog = new THREE.Fog('#cce8f7', 300, 950);   // far clouds fade into the haze at the horizon
-  const sunTarget = new THREE.Vector3(0, 52, -380);
+  scene.fog = new THREE.Fog('#e4f0f6', 320, 980);
+  const sunTarget = new THREE.Vector3(0, 160, -300);
   const sun = new THREE.DirectionalLight('#fff4e6', 2.8);
-  sun.position.copy(sunTarget).addScaledVector(SUN_DIR, 700); sun.target.position.copy(sunTarget);
+  sun.position.copy(sunTarget).addScaledVector(SUN_DIR, 900); sun.target.position.copy(sunTarget);
   sun.castShadow = true; sun.shadow.mapSize.set(COARSE ? 1024 : 2048, COARSE ? 1024 : 2048);
-  Object.assign(sun.shadow.camera, { left: -760, right: 760, top: 520, bottom: -520, near: 200, far: 1300 });
-  sun.shadow.intensity = .28; sun.shadow.bias = -.0005; sun.shadow.normalBias = .6; sun.shadow.autoUpdate = false;
-  scene.add(sun, sun.target, new THREE.HemisphereLight('#e4f0ff', '#c6d3e4', 1.9));
+  Object.assign(sun.shadow.camera, { left: -900, right: 900, top: 700, bottom: -700, near: 100, far: 1900 });
+  sun.shadow.intensity = .35; sun.shadow.bias = -.0005; sun.shadow.normalBias = .8; sun.shadow.autoUpdate = false;
+  scene.add(sun, sun.target, new THREE.HemisphereLight('#e4f0ff', '#b4c3d6', 1.7));
   scene.add(buildDome());
   const clouds = buildClouds(scene);
 
   const camera = new THREE.PerspectiveCamera(30, 1, 1, 1500);
   let pitch = 0;
   function placeCamera(t) {
-    // a slow look left and back again, eased so the loop never jumps
     const k = .5 - .5 * Math.cos(Math.PI * t / 60), yaw = THREE.MathUtils.degToRad(-2.5 + 5 * k);
     camera.position.set(0, 0, 0);
     camera.rotation.set(pitch, yaw, 0, 'YXZ'); camera.updateMatrixWorld();
@@ -208,7 +240,6 @@ async function main() {
     renderer.setSize(W, H, false);
     ascii.uniforms.uView.value.set(W, H); ascii.uniforms.uGrid.value.set(c, r);
     if (c !== cols || r !== rows) setGrid(c, r);
-    // the scene is only ever read one cell at a time, so it renders at a few pixels per cell (as on the diorama)
     const S = (COARSE ? 2.6 : 3.2) * Math.sqrt(qScale);
     rt.setSize(Math.round(c * S), Math.round(r * S * CH / CW));
     const hfov = THREE.MathUtils.degToRad(74), vfov = clamp(2 * Math.atan(Math.tan(hfov / 2) / aspect), THREE.MathUtils.degToRad(22), THREE.MathUtils.degToRad(64));
@@ -218,49 +249,91 @@ async function main() {
   resize();
   let rsz = 0; new ResizeObserver(() => { clearTimeout(rsz); rsz = setTimeout(() => resize(), 120); }).observe(canvas);
 
+  // ---- pointer: a wind trail, clouds nudged by it, and a gust on click ----
+  const stroke = (px, py, dir, strength, rad) => {
+    const c0 = Math.max(0, Math.floor((px - rad) / CW)), c1 = Math.min(cols - 1, Math.floor((px + rad) / CW));
+    const r0 = Math.max(0, Math.floor((py - rad) / CH)), r1 = Math.min(rows - 1, Math.floor((py + rad) / CH));
+    for (let ry = r0; ry <= r1; ry++) for (let cx = c0; cx <= c1; cx++) {
+      const d = Math.hypot(cx * CW + CW / 2 - px, ry * CH + CH / 2 - py);
+      if (d > rad) continue;
+      const v = strength * (1 - (d / rad) * .45), i = ry * cols + cx;
+      if (v > wind[i]) { wind[i] = v; windDir[i] = dir; }
+    }
+  };
+  const dirOf = (dx, dy) => { let a = Math.atan2(dy, dx); if (a < 0) a += Math.PI; return Math.round(a / (Math.PI / 4)) % 4; }; // 0 '-', 1 '\', 2 '|', 3 '/'
+  const pushes = [];   // recent pointer motion, applied to clouds in screen space
   let lastP = null;
   addEventListener('pointermove', (e) => {
     const b = canvas.getBoundingClientRect(), x = e.clientX - b.left, y = e.clientY - b.top;
-    if (lastP) {
+    if (lastP && y < b.height) {
       const dx = x - lastP.x, dy = y - lastP.y, len = Math.hypot(dx, dy);
       if (len >= 2) {
-        let a = Math.atan2(dy, dx); if (a < 0) a += Math.PI;
-        const dir = Math.round(a / (Math.PI / 4)) % 4;     // 0 '-', 1 '\', 2 '|', 3 '/'
-        const rad = 20, strength = Math.min(1, .35 + len / 40), steps = Math.ceil(len / 4);
-        for (let s = 0; s <= steps; s++) {
-          const px = lastP.x + dx * s / steps, py = lastP.y + dy * s / steps;
-          const c0 = Math.max(0, Math.floor((px - rad) / CW)), c1 = Math.min(cols - 1, Math.floor((px + rad) / CW));
-          const r0 = Math.max(0, Math.floor((py - rad) / CH)), r1 = Math.min(rows - 1, Math.floor((py + rad) / CH));
-          for (let ry = r0; ry <= r1; ry++) for (let cx = c0; cx <= c1; cx++) {
-            const d = Math.hypot(cx * CW + CW / 2 - px, ry * CH + CH / 2 - py);
-            if (d > rad) continue;
-            const v = strength * (1 - (d / rad) * .45), i = ry * cols + cx;
-            if (v > wind[i]) { wind[i] = v; windDir[i] = dir; }
-          }
-        }
+        const dir = dirOf(dx, dy), strength = Math.min(1, .35 + len / 40), steps = Math.ceil(len / 4);
+        for (let s = 0; s <= steps; s++) stroke(lastP.x + dx * s / steps, lastP.y + dy * s / steps, dir, strength, 20);
+        pushes.push({ x, y, dx, dy, r: 150 });
       }
     }
     lastP = { x, y };
   }, { passive: true });
   document.addEventListener('mouseleave', () => { lastP = null; });
+  addEventListener('pointerdown', (e) => {
+    const b = canvas.getBoundingClientRect(), x = e.clientX - b.left, y = e.clientY - b.top;
+    if (y > b.height || e.target.closest('a, button')) return;
+    // a gust: strokes fanning out from the click, clouds blown back
+    for (let k = 0; k < 28; k++) {
+      const a = k / 28 * Math.PI * 2, ca = Math.cos(a), sa = Math.sin(a), dir = dirOf(ca, sa);
+      for (let r = 14; r < 110; r += 6) stroke(x + ca * r, y + sa * r, dir, 1 - r / 150, 7);
+    }
+    pushes.push({ x, y, gust: true, r: 320 });
+  });
 
-  const dummy = new THREE.Object3D(); let shadowTick = 0, lastT = 0;
-  function drawFrame(t) {
+  const dummy = new THREE.Object3D(), v3 = new THREE.Vector3(), UP = new THREE.Vector3(0, 1, 0);
+  const fw = new THREE.Vector3(), rt3 = new THREE.Vector3(), up3 = new THREE.Vector3();
+  let shadowTick = 0, lastT = 0;
+  function drawFrame(t, realDt) {
     time.value = t; placeCamera(t);
     const dt = Math.max(0, t - lastT); lastT = t;
-    // clouds drift east and wrap round out of sight
-    for (const c of clouds.field) { c.x += dt * 3.2; if (c.x > c.lim) c.x -= 2 * c.lim; }
+    // pointer pushes: find each cloud on screen and nudge the ones the wind passed near
+    if (pushes.length) {
+      for (const c of clouds.field) {
+        v3.set(c.x, c.y + 6, c.z).project(camera);
+        if (v3.z > 1) continue;
+        const sx = (v3.x * .5 + .5) * W, sy = (.5 - v3.y * .5) * H, scale = Math.abs(c.z) / 300;
+        for (const p of pushes) {
+          const ddx = sx - p.x, ddy = sy - p.y, d = Math.hypot(ddx, ddy);
+          if (d > p.r) continue;
+          const f = 1 - d / p.r;
+          if (p.gust) { c.vx += ddx / (d + 1) * 40 * f * scale; c.vy -= ddy / (d + 1) * 18 * f * scale; }
+          else { c.vx += p.dx * .9 * f * scale; c.vy -= p.dy * .4 * f * scale; }
+        }
+      }
+      pushes.length = 0;
+    }
+    // clouds drift east, carry any push, settle back, and wrap round out of sight
+    for (const c of clouds.field) {
+      c.x += (3.2 + c.vx) * dt; c.y += c.vy * dt;
+      const k = Math.exp(-dt * 1.6); c.vx *= k; c.vy *= k;
+      c.y += (c.y0 - c.y) * Math.min(1, dt * .5);
+      if (c.x > c.lim) c.x -= 2 * c.lim; else if (c.x < -c.lim) c.x += 2 * c.lim;
+    }
+    // each cloud turns its side profile to the viewer, so clouds high overhead still read as fluffy cumulus
+    // rather than flat bases seen from below
+    let cur = -1;
     clouds.puffs.forEach((p, i) => {
-      const c = clouds.field[p.c];
-      dummy.position.set(c.x + p.dx, c.y + p.dy, c.z + p.dz);
-      dummy.scale.set(p.r, p.r * .82, p.r); dummy.updateMatrix(); clouds.mesh.setMatrixAt(i, dummy.matrix);
+      const c = clouds.field[p.c], br = 1 + .06 * Math.sin(t * .35 + i * 1.7);   // puffs swell and settle slowly
+      if (p.c !== cur) {
+        cur = p.c; fw.set(c.x, c.y, c.z).normalize(); rt3.crossVectors(fw, UP).normalize(); up3.crossVectors(rt3, fw);
+      }
+      dummy.position.set(c.x, c.y, c.z).addScaledVector(rt3, p.dx).addScaledVector(up3, p.dy).addScaledVector(fw, p.dz);
+      dummy.scale.set(p.r * br, p.r * .82 * br, p.r * br); dummy.updateMatrix(); clouds.mesh.setMatrixAt(i, dummy.matrix);
     });
     clouds.mesh.instanceMatrix.needsUpdate = true;
 
-    const data = windTex.image.data;
+    // the trail fades over about half a second, whatever the display's refresh rate
+    const data = windTex.image.data, fade = Math.exp(-(realDt || .016) * 4.2);
     for (let i = 0; i < wind.length; i++) {
       const v = wind[i]; data[i * 4] = Math.min(255, v * 255); data[i * 4 + 1] = windDir[i] * 64;
-      wind[i] = v > .01 ? v * .935 : 0;
+      wind[i] = v > .01 ? v * fade : 0;
     }
     windTex.needsUpdate = true;
 
@@ -270,7 +343,7 @@ async function main() {
     }
 
     if (shadowTick++ % 3 === 0) sun.shadow.needsUpdate = true;
-    renderer.setRenderTarget(rt); renderer.setClearColor(0x4d9ee0, 0); renderer.clear(); renderer.render(scene, camera);
+    renderer.setRenderTarget(rt); renderer.setClearColor(0xa0d4ee, 0); renderer.clear(); renderer.render(scene, camera);
     renderer.setRenderTarget(null); renderer.render(post, postCam);
   }
 
@@ -285,7 +358,7 @@ async function main() {
     if (now - last < 14) { requestAnimationFrame(loop); return; }
     const dt = (now - last) / 1000; last = now;
     if (!still) clock += Math.min(.1, dt);
-    drawFrame(clock);
+    drawFrame(clock, Math.min(.1, dt));
     if (++frames > 30 && !decided && !still && dt < .25) {
       tSum += dt; tN++;
       if (tN === 90) { decided = true; const avg = tSum / tN; if (avg > .022) { qScale = avg > .04 ? .45 : .7; resize(); } }
