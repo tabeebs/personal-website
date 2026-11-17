@@ -49,11 +49,21 @@
         </section>
 
         <!-- placeholder until the experience section is written -->
+        <!-- two sentences whose endings keep changing (src/experience.js); screen readers get the plain list -->
         <section class="view" id="view-experience" role="tabpanel" aria-labelledby="tab-experience" hidden>
           <section class="intro">
             <h2 class="hi">experience</h2>
-            <p class="soon">more on this soon.</p>
           </section>
+          <div class="roles" data-experience>
+            <ul class="sr">
+              <li>Now: Data Science Intern at Salesforce</li>
+              <li>Now: Research Assistant at the Kirby Institute</li>
+              <li>Now: Teaching Assistant at UNSW CSE</li>
+              <li>Before: Tech Director at UNSW DataSoc</li>
+              <li>Before: Partnerships Director at UNSW AISoc</li>
+              <li>Before: Private Tutor at Shaf's Tutoring</li>
+            </ul>
+          </div>
         </section>
       </div>
     </div>
@@ -66,5 +76,6 @@
   <script type="module" src="build/favicon.js"></script>
   <script type="module" src="build/tabs.js"></script>
   <script type="module" src="build/hello.js"></script>
+  <script type="module" src="build/experience.js"></script>
 </body>
 </html>
