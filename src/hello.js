@@ -1,6 +1,6 @@
 // The hello at the top of the panel. Each letter of a .hi heading is its own little body: the letters drop in and
-// bounce when the page opens, and clicking the heading sends a wave of hops (squash, jump, land) through the
-// whole word. A name marked .name gets a crayon highlighter swash behind it, in the meadow's crayon
+// bounce when the page opens, and hovering the word sends a wave of hops (squash, jump, land) through all of
+// it. A name marked .name gets a crayon highlighter swash behind it, in the meadow's crayon
 // (src/crayon.js): mustard waxy strokes over a pastel layer printed a little out of register, boiling on twos. It
 // sweeps in from the left half a second after the letters have landed, and again whenever its view comes back.
 // Source for build/hello.js: rebuild with `npm run build` after editing.
@@ -38,7 +38,7 @@ function lettered(h) {
     shown.append(s); letters.push(s);
   }
   h.append(sr, shown);
-  h.addEventListener('click', () => wave(letters));
+  shown.addEventListener('pointerenter', () => wave(letters));   // the word itself, not the empty line beside it
   return letters;
 }
 

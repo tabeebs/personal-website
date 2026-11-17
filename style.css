@@ -78,7 +78,7 @@ html.playing, html.playing * { -webkit-user-select: none; user-select: none; }
 .view[hidden] { display: none; }
 .view > .intro:first-child > :first-child { padding-right: 126px; }   /* the greeting clears the tabs */
 
-/* The greeting (src/hello.js): a big navy "kia ora!" whose letters drop in and wave when clicked, and a crayon
+/* The greeting (src/hello.js): a big navy "kia ora!" whose letters drop in and wave when hovered, and a crayon
    highlighter swash behind the name. */
 .hi { margin: 0 0 14px; font-size: 27px; line-height: 34px; font-weight: 650; letter-spacing: -.025em; color: #2d3a68; cursor: default; }
 .hi .ch { display: inline-block; transform-origin: 50% 90%; }
