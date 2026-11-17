@@ -2,7 +2,7 @@
 // Follows the lens on the Seed Data dashboard tabs (SeedData/app/tabs.js): the selected tab sits under a thick
 // clear lens that refracts what's beneath its rim. Here the lens runs on springs, so it slides with a stretch,
 // lands with a wobble, swells when you grab it, and can be dragged from tab to tab like a slider. Hovering a tab
-// raises a bubble of frost under it, wakes its doodle, and a frosted tooltip glides over to say where it goes.
+// raises a bubble of frost under it, wakes its doodle, and a little tinted label bounces over to name it.
 // Source for build/tabs.js: rebuild with `npm run build` after editing.
 
 const nav = document.querySelector('.tabs');
@@ -89,15 +89,15 @@ function showTip(tab, { brief = false } = {}) {
   const from = tipFor;
   tipFor = tab;
   const text = tip.querySelector('.tip-text');
-  text.querySelector('b').textContent = tab.getAttribute('aria-label');
-  text.querySelector('small').textContent = tab.dataset.hint || '';
-  // fit the card to what it says, and keep it from running past the panel's right edge
-  const pad = 26, w = text.offsetWidth + pad;
+  text.textContent = tab.getAttribute('aria-label').toLowerCase();
+  // fit the label to its word, and keep it from running past the panel's right edge
+  const w = text.offsetWidth + 20;
   const center = nav.offsetLeft + tab.offsetLeft + tab.offsetWidth / 2;
   const x = Math.min(center - w / 2, nav.offsetLeft + nav.offsetWidth - w);
   const wasShown = tip.classList.contains('show');
   tip.classList.toggle('snap', !wasShown);   // appearing: pop up in place; already up: glide over
-  tip.style.setProperty('--y', `${nav.offsetTop + nav.offsetHeight + 11}px`);
+  tip.style.setProperty('--y', `${nav.offsetTop + nav.offsetHeight + 8}px`);
+  tip.style.setProperty('--tint', tab.dataset.tint || '#fff');
   tip.style.setProperty('--x', `${x}px`);
   tip.style.setProperty('--w', `${w}px`);
   tip.style.setProperty('--nub', `${center - x}px`);
@@ -105,8 +105,8 @@ function showTip(tab, { brief = false } = {}) {
   tip.classList.add('show');
   if (wasShown && from && from !== tab && !calm.matches) {
     const dir = Math.sign(tabs.indexOf(tab) - tabs.indexOf(from));
-    text.animate([{ opacity: 0, transform: `translateX(${dir * 10}px)`, filter: 'blur(2px)' }, { opacity: 1, transform: 'none', filter: 'none' }],
-      { duration: 320, easing: 'cubic-bezier(.2, .8, .3, 1)' });
+    text.animate([{ opacity: 0, transform: `translateX(${dir * 8}px) scale(.9)` }, { opacity: 1, transform: 'none' }],
+      { duration: 300, easing: 'cubic-bezier(.3, 1.5, .5, 1)' });
   }
   if (brief) tipTimer = setTimeout(hideTip, 1100);
 }
