@@ -73,6 +73,7 @@ html.playing, html.playing * { -webkit-user-select: none; user-select: none; }
 
 /* The panel holds the tabs and whichever view is open; the sky draws its soft card around it (src/sky.js). */
 .panel { position: relative; }
+.views { position: relative; }
 .view { display: flow-root; }
 .view[hidden] { display: none; }
 .view > .intro:first-child { padding-right: 116px; min-height: 30px; }   /* the first line clears the tabs */

@@ -116,10 +116,43 @@ function hideTip(delay = 0) {
 }
 
 // ---- views ----
-// Shows one view and hides the other.
-function swap(from, to) {
-  from.hidden = true;
+// Switching views: the old view's lines drift off the way the lens left and blur away, the panel eases to the new
+// view's height (the sky's card follows it, see sky.js), and the new view's lines arrive one after another from
+// the side the lens went, coming into focus as they land. Lines are paragraphs, list rows, and anything marked
+// .piece.
+const viewsEl = document.querySelector('.views');
+const pieces = (v) => [...v.querySelectorAll('.intro > *, li, .piece')];
+let finishSwap = null;
+function swap(from, to, dir, animate = true) {
+  finishSwap?.();                                          // a switch still in flight lands at once
+  if (!animate || calm.matches) { from.hidden = true; to.hidden = false; return; }
+  const h0 = viewsEl.offsetHeight;
+  // the old view leaves the flow and stays where it was, so the new one can take its place underneath
+  Object.assign(from.style, { position: 'absolute', top: '0', left: '0', right: '0', pointerEvents: 'none' });
+  from.setAttribute('inert', '');
   to.hidden = false;
+  const h1 = to.offsetHeight;
+  const anims = [];
+  pieces(from).forEach((el, i) => anims.push(el.animate([
+    { opacity: 1, transform: 'none', filter: 'blur(0)' },
+    { opacity: 0, transform: `translateX(${-dir * 16}px)`, filter: 'blur(3px)' },
+  ], { duration: 210, delay: i * 28, easing: 'cubic-bezier(.4, 0, .9, .6)', fill: 'forwards' })));
+  anims.push(viewsEl.animate([{ height: `${h0}px` }, { height: `${h1}px` }],
+    { duration: 560, easing: 'cubic-bezier(.32, 1.18, .5, 1)' }));   // a touch of overshoot, like the lens
+  pieces(to).forEach((el, i) => anims.push(el.animate([
+    { opacity: 0, transform: `translate(${dir * 20}px, 4px) scale(.98)`, filter: 'blur(4px)' },
+    { opacity: 1, transform: 'none', filter: 'blur(0)' },
+  ], { duration: 520, delay: 130 + i * 60, easing: 'cubic-bezier(.2, .9, .25, 1)', fill: 'backwards' })));
+  let done = false;
+  finishSwap = () => {
+    if (done) return;
+    done = true; finishSwap = null;
+    anims.forEach((a) => a.cancel());
+    from.hidden = true;
+    from.removeAttribute('inert');
+    Object.assign(from.style, { position: '', top: '', left: '', right: '', pointerEvents: '' });
+  };
+  Promise.all(anims.map((a) => a.finished)).then(finishSwap, () => {});
 }
 
 function select(name, { focus = false, animate = true } = {}) {
