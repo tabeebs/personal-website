@@ -1,10 +1,10 @@
-// Doodles: crayon renditions of the resume, GitHub and LinkedIn icons beside each link, in the same crayon
-// language as the meadow. Fills are rows of short waxy strokes over a pastel layer printed slightly out of
-// register (letters and the Octocat are paper left bare), the linework is navy crayon, and the whole drawing
-// redraws a few times a second.
+// Doodles: crayon renditions of the resume, GitHub and LinkedIn icons beside each link, and of the house and
+// briefcase on the panel's tabs, in the same crayon language as the meadow. Fills are rows of short waxy
+// strokes over a pastel layer printed slightly out of register (letters and the Octocat are paper left bare),
+// the linework is navy crayon, and the whole drawing redraws a few times a second.
 // At rest a drawing boils slowly. Hovering its row (or focusing its link) boils it on twos, slides the colour
 // layer into register, and the drawing comes to life: the resume writes itself out over a second page, the
-// Octocat perks its ears and lifts its tail, the dot on the LinkedIn i hops.
+// Octocat perks its ears and lifts its tail, the dot on the LinkedIn i hops. Hovering a tab does the same for its button.
 // Each row also has a leader line: a row of small ASCII dots on the sky's 8px rhythm. As its icon comes to
 // life, a crayon dash in the icon's colour sweeps along it from the name and finishes in a little arrow.
 import { PAL, C, BOIL_MS, hash } from './crayon.js';
@@ -86,6 +86,45 @@ const DRAWINGS = {
     if (b > .02) out.push(fill(circle(29.2, 6.8, 4.4 * b, 12), C.tomato, C.tomatoP));
     return out;
   },
+  // Home: a little house. On hover the door swings open, the window lights up, and smoke curls from the chimney.
+  house(t) {
+    const g = ease(t), out = [];
+    out.push(fill(rect(22.6, 7.6, 26.2, 15), C.tomato, C.tomatoP));          // chimney, behind the roof
+    out.push(fill(rect(7.6, 18, 28.4, 31), C.mustard, C.mustardP));          // walls
+    out.push(fill([[3.6, 19], [18, 6.6], [32.4, 19]], C.teal, C.tealP));     // roof
+    out.push(fill(rect(15.4, 23, 20.6, 31), C.navy, C.lilacP));              // the dark doorway
+    out.push(fill(rect(15.4, 23, lerp(20.6, 16.6, backOut(g)), 31), C.tomato, C.tomatoP));   // the door swings in
+    const lit = g > .35, win = rect(22.2, 21.4, 26, 25.2);
+    out.push(fill(win, lit ? C.mustard : C.navy, lit ? C.mustardP : C.blueP));
+    out.push(line([[3.2, 19.4], [18, 6.6], [32.8, 19.4]], C.navy, 1.3));
+    out.push(line([[7.6, 19], [7.6, 31], [28.4, 31], [28.4, 19]], C.navy, 1.1));
+    out.push(line([[2.8, 31.2], [33.2, 31.2]], C.navy, .9));
+    // smoke: three puffs rising and swelling while the house is alive
+    if (g > .05) {
+      const now = performance.now() / 1600;
+      for (let i = 0; i < 3; i++) {
+        const s = (now + i / 3) % 1, r = (.9 + s * 1.7) * g * (1 - s * .35);
+        if (r > .3) out.push(fill(circle(24.4 + s * 3.2 + Math.sin(s * 6) * .6, 6 - s * 6.4, r, 8), C.lilac, C.lilacP));
+      }
+    }
+    return out;
+  },
+  // Experience: a briefcase. On hover a page peeks up out of it, the case hops, and the clasp catches the light.
+  briefcase(t) {
+    const g = ease(t), hop = -Math.sin(Math.PI * clamp01(t * 1.25)) * 1.6, out = [];
+    const peek = lerp(14, 5.5, backOut(clamp01((g - .15) / .85)));
+    out.push(fill(rect(11, peek, 25, 20), C.teal, C.tealP));                 // the page, behind the case
+    out.push(line([[13.6, peek + 3], [21, peek + 3]], C.navy, 1));
+    out.push(line([[13.6, peek + 5.6], [19, peek + 5.6]], C.navy, .9));
+    const body = roundRect(4.5, 13.5 + hop, 31.5, 31 + hop, 3.4);
+    out.push(fill(body, C.tomato, C.tomatoP));
+    out.push(line(body.concat([body[0]]), C.navy, 1.1));
+    out.push(line([[13.4, 13.6 + hop], [13.4, 9.6 + hop - g * .8], [22.6, 9.6 + hop - g * .8], [22.6, 13.6 + hop]], C.navy, 1.4)); // handle
+    out.push(line([[4.8, 20.6 + hop], [31.2, 20.6 + hop]], C.navy, .9));       // the seam of the lid
+    const clasp = rect(16, 18.6 + hop, 20, 22.8 + hop);
+    out.push(fill(clasp, g > .3 ? C.mustard : C.navy, C.mustardP));
+    return out;
+  },
 };
 
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
@@ -107,13 +146,14 @@ function inside(pts, x, y) {
 function doodle(el) {
   const draw = DRAWINGS[el.dataset.doodle];
   if (!draw) return;
+  const shown = +el.dataset.size || SHOWN;   // a doodle can ask to be drawn smaller (data-size, css px)
   const canvas = document.createElement('canvas');
   el.appendChild(canvas);
   const ctx = canvas.getContext('2d');
   let dpr = 1;
   const size = () => {
     dpr = Math.min(devicePixelRatio || 1, 3);
-    canvas.width = canvas.height = Math.round(SHOWN * dpr);
+    canvas.width = canvas.height = Math.round(shown * dpr);
   };
   size();
 
@@ -165,7 +205,7 @@ function doodle(el) {
 
   let paint = function () {
     const f = frame, j = (k, a = .35) => (hash(f, k, 31) - .5) * 2 * a;   // per-drawing jitter
-    const k = dpr * SHOWN / SIZE;
+    const k = dpr * shown / SIZE;
     ctx.setTransform(k, 0, 0, k, 0, 0);
     ctx.clearRect(0, 0, SIZE, SIZE);
     const items = draw(t);
@@ -236,7 +276,7 @@ function doodle(el) {
   }
   const wake = () => { if (timer) clearTimeout(timer); tick(); };
 
-  const row = el.closest('li') || el;
+  const row = el.closest('li, button') || el;
   const on = () => { target = 1; wake(); };
   const off = () => { target = 0; wake(); };
   row.addEventListener('pointerenter', on);
