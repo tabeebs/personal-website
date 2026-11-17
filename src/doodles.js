@@ -1,10 +1,10 @@
-// Doodles: crayon renditions of the resume, GitHub and LinkedIn icons beside each link, and of the house and
+// Doodles: crayon renditions of the GitHub, email and LinkedIn icons beside each link, and of the house and
 // briefcase on the panel's tabs, in the same crayon language as the meadow. Fills are rows of short waxy
 // strokes over a pastel layer printed slightly out of register (letters and the Octocat are paper left bare),
 // the linework is navy crayon, and the whole drawing redraws a few times a second.
 // At rest a drawing boils slowly. Hovering its row (or focusing its link) boils it on twos, slides the colour
-// layer into register, and the drawing comes to life: the resume writes itself out over a second page, the
-// Octocat perks its ears and lifts its tail, the dot on the LinkedIn i hops. Hovering a tab does the same for its button.
+// layer into register, and the drawing comes to life: the Octocat perks its ears and lifts its tail, the envelope
+// opens and a letter rises out, the dot on the LinkedIn i hops. Hovering a tab does the same for its button.
 // Each row also has a leader line: a row of small ASCII dots on the sky's 8px rhythm. As its icon comes to
 // life, a crayon dash in the icon's colour sweeps along it from the name and finishes in a little arrow.
 import { PAL, C, BOIL_MS, hash } from './crayon.js';
@@ -34,22 +34,31 @@ const line = (pts, ink = C.navy, w = 1.5) => ({ kind: 'line', pts, ink, w });
 
 // Each drawing is a function of t, how alive it is (0 at rest, 1 hovered).
 const DRAWINGS = {
-  // Resume: a sheet with a photo and lines of text; on hover the lines write themselves out and a second
-  // page slides out from behind
-  resume(t) {
+  // Email: an envelope with a wax seal; on hover the flap swings open and a letter rises out of it
+  email(t) {
     const g = ease(t), out = [];
-    const bx = lerp(1.6, 4.2, g), by = lerp(-1, -2.4, g);
-    out.push(fill([[10 + bx, 5 + by], [29 + bx, 5 + by], [29 + bx, 32.5 + by], [10 + bx, 32.5 + by]], C.mustard, C.mustardP));
-    out.push(fill([[7.5, 5.5], [22.5, 5.5], [27, 10], [27, 33.5], [7.5, 33.5]], C.teal, C.tealP));
-    out.push(fill(circle(12.2, 11.4, 2.5, 8), C.tomato, C.tomatoP));
-    out.push(line([[22.5, 5.6], [22.5, 10], [26.9, 10]], C.navy, 1.1));
-    const w = lerp(.55, 1, g);
-    out.push(line([[16, 10], [16 + 5 * w, 10]], C.navy, 1.3));
-    out.push(line([[16, 13.2], [16 + 3.4 * w, 13.2]], C.navy, 1));
-    [[18.5, 12.5], [22, 10.5], [25.5, 12.5], [29, 7.5]].forEach(([y, len], i) => {
-      const k = clamp01((g - i * .12) / .55);
-      out.push(line([[10.8, y], [10.8 + len * lerp(.5, 1, k), y]], C.navy, 1.05));
-    });
+    const apex = lerp(20.5, 2.5, ease(clamp01(t * 1.6))), open = apex < 11.5;   // the flap's tip, folding up
+    const rise = backOut(clamp01((g - .35) / .65)), top = lerp(15, 5.5, rise);    // the letter, rising out
+    out.push(fill(rect(4.5, 11, 31.5, 29.5), C.mustard, C.mustardP));            // the back of the envelope
+    const flap = [[4.5, 11], [18, apex], [31.5, 11]];
+    if (open) out.push(fill(flap, C.tomato, C.tomatoP));                          // the flap's inside, behind the letter
+    if (open) {                                                                     // the letter, once there's room for it
+      out.push(fill(rect(8.5, top, 27.5, 27), C.teal, C.tealP));
+      out.push(line([[11.5, top + 3.2], [21.5, top + 3.2]], C.navy, 1));
+      out.push(line([[11.5, top + 6], [24, top + 6]], C.navy, .9));
+    }
+    const pocket = [[4.5, 16], [18, 23.5], [31.5, 16], [31.5, 29.5], [4.5, 29.5]];
+    out.push(fill(pocket, C.mustard, C.mustardP));                                // the front, holding the letter
+    out.push(line([[4.7, 16.2], [18, 23.5], [31.3, 16.2]], C.navy, .9));
+    if (!open) {
+      out.push(fill(flap, C.mustard, C.mustardP));
+      out.push(line(flap, C.navy, 1.1));
+      const s = 1 - clamp01(t * 3);                                               // the seal shrinks away as it opens
+      if (s > .05) out.push(fill(circle(18, apex - 1.4, 2.3 * s, 9), C.tomato, C.tomatoP));
+    } else {
+      out.push(line(flap, C.navy, 1));
+    }
+    out.push(line(rect(4.5, 11, 31.5, 29.5).concat([[4.5, 11]]), C.navy, 1.1));
     return out;
   },
   // GitHub: the Octocat mark, a crayon circle with the cat left as bare paper
@@ -129,7 +138,7 @@ const DRAWINGS = {
 
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
 // each icon's own crayon, used for its leader line
-const INK = { github: C.navy, resume: C.teal, linkedin: C.blue };
+const INK = { github: C.navy, email: C.tomato, linkedin: C.blue };
 const DOT = '#b4bcc6';                  // the leader's resting dots, a light grey like the sky's small dots
 const STEP = 8;                         // one dot per sky cell width
 const insideShape = (it, x, y) => inside(it.pts, x, y) && !it.holes.some((h) => inside(h, x, y));
