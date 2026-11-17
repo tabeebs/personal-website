@@ -1,9 +1,8 @@
 // The hello at the top of the panel. Each letter of a .hi heading is its own little body: the letters drop in and
 // bounce when the page opens, and clicking the heading sends a wave of hops (squash, jump, land) through the
-// whole word. A name marked .name gets a crayon highlighter swash behind it,
-// in the meadow's crayon (src/crayon.js): mustard waxy strokes over a pastel layer printed a little out of
-// register, boiling on twos. It sweeps in from the left after the letters land, and again whenever its view
-// comes back.
+// whole word. A name marked .name gets a crayon highlighter swash behind it, in the meadow's crayon
+// (src/crayon.js): mustard waxy strokes over a pastel layer printed a little out of register, boiling on twos. It
+// sweeps in from the left half a second after the letters have landed, and again whenever its view comes back.
 // Source for build/hello.js: rebuild with `npm run build` after editing.
 import { PAL, C, BOIL_MS, hash } from './crayon.js';
 
@@ -123,6 +122,7 @@ function swash(el) {
 }
 
 // ---- wiring ----
+const DROP = 640;   // how long each letter takes to drop in and settle, ms
 for (const view of document.querySelectorAll('.view')) {
   const letters = [...view.querySelectorAll('.hi')].flatMap(lettered);
   const names = [...view.querySelectorAll('.name')].map(swash);
@@ -133,8 +133,9 @@ for (const view of document.querySelectorAll('.view')) {
       { opacity: 1, transform: 'translateY(2px) scale(1.12, .86)', offset: .55 },
       { transform: 'translateY(-2px) scale(.96, 1.04)', offset: .78 },
       { transform: 'none' },
-    ], { duration: 640, delay: 180 + i * 48, easing: 'cubic-bezier(.3, .7, .4, 1)', fill: 'backwards' }));
-    names.forEach((n) => n.sweep(180 + letters.length * 48 + 260));
+    ], { duration: DROP, delay: 180 + i * 48, easing: 'cubic-bezier(.3, .7, .4, 1)', fill: 'backwards' }));
+    // half a second after the last letter has landed
+    names.forEach((n) => n.sweep(180 + Math.max(0, letters.length - 1) * 48 + DROP + 500));
   }
   // coming back to a view: a wave through its heading, and the swash sweeps in again
   new MutationObserver(() => {
