@@ -116,12 +116,15 @@ function hideTip(delay = 0) {
 }
 
 // ---- views ----
-// Switching views: the old view's lines drift off the way the lens left and blur away, the panel eases to the new
-// view's height (the sky's card follows it, see sky.js), and the new view's lines arrive one after another from
-// the side the lens went, coming into focus as they land. Lines are paragraphs, list rows, and anything marked
-// .piece.
+// Switching views: the panel eases to the new view's height (the sky's card follows it, see sky.js) and the lines
+// keep time with its edge. Shrinking, each old line blurs away just as the edge sweeps up over it, bottom first;
+// growing, each new line arrives as the edge uncovers it. New lines slide in from the side the lens went and come
+// into focus as they land. Lines are paragraphs, list rows, and anything marked .piece.
 const viewsEl = document.querySelector('.views');
 const pieces = (v) => [...v.querySelectorAll('.intro > *, li, .piece')];
+const EASE = 'cubic-bezier(.33, 1, .68, 1)';                    // ease-out cubic: 1 - (1 - u)^3
+const reach = (e) => 1 - Math.cbrt(1 - clamp(e, 0, 1));         // how far through the easing it covers fraction e
+const EDGE = 34;                                                // the card reaches this far below the views (sky.js)
 let finishSwap = null;
 function swap(from, to, dir, animate = true) {
   finishSwap?.();                                          // a switch still in flight lands at once
@@ -131,18 +134,28 @@ function swap(from, to, dir, animate = true) {
   Object.assign(from.style, { position: 'absolute', top: '0', left: '0', right: '0', pointerEvents: 'none' });
   from.setAttribute('inert', '');
   to.hidden = false;
-  const h1 = to.offsetHeight;
+  const h1 = to.offsetHeight, span = Math.abs(h1 - h0), grow = h1 > h0;
+  const D = clamp(260 + span * .6, 300, 460);
+  const top = viewsEl.getBoundingClientRect().top, box = (el) => el.getBoundingClientRect();
+  // when (ms) the panel's edge passes a line at y, measured from the top of the views
+  const edgeAt = (y) => (span < 1 ? 0 : reach(grow ? (y - h0 - EDGE) / span : (h0 + EDGE - y) / span) * D);
   const anims = [];
-  pieces(from).forEach((el, i) => anims.push(el.animate([
-    { opacity: 1, transform: 'none', filter: 'blur(0)' },
-    { opacity: 0, transform: `translateX(${-dir * 16}px)`, filter: 'blur(3px)' },
-  ], { duration: 210, delay: i * 28, easing: 'cubic-bezier(.4, 0, .9, .6)', fill: 'forwards' })));
-  anims.push(viewsEl.animate([{ height: `${h0}px` }, { height: `${h1}px` }],
-    { duration: 560, easing: 'cubic-bezier(.32, 1.18, .5, 1)' }));   // a touch of overshoot, like the lens
-  pieces(to).forEach((el, i) => anims.push(el.animate([
-    { opacity: 0, transform: `translate(${dir * 20}px, 4px) scale(.98)`, filter: 'blur(4px)' },
-    { opacity: 1, transform: 'none', filter: 'blur(0)' },
-  ], { duration: 520, delay: 130 + i * 60, easing: 'cubic-bezier(.2, .9, .25, 1)', fill: 'backwards' })));
+  pieces(from).forEach((el, i) => {
+    const r = box(el), mid = (r.top + r.bottom) / 2 - top;
+    const end = !grow && mid > h1 ? edgeAt(mid) : 0;       // lines the edge will cover go as it reaches them
+    anims.push(el.animate([
+      { opacity: 1, transform: 'none', filter: 'blur(0)' },
+      { opacity: 0, transform: `translateX(${-dir * 14}px)`, filter: 'blur(3px)' },
+    ], { duration: 170, delay: Math.max(i * 12, end - 170), easing: 'cubic-bezier(.4, 0, .9, .6)', fill: 'forwards' }));
+  });
+  anims.push(viewsEl.animate([{ height: `${h0}px` }, { height: `${h1}px` }], { duration: D, easing: EASE }));
+  pieces(to).forEach((el, i) => {
+    const r = box(el), start = grow ? edgeAt(r.bottom - top) : 0;   // lines the edge uncovers come as it does
+    anims.push(el.animate([
+      { opacity: 0, transform: `translate(${dir * 18}px, 4px) scale(.98)`, filter: 'blur(4px)' },
+      { opacity: 1, transform: 'none', filter: 'blur(0)' },
+    ], { duration: 460, delay: Math.max(90 + i * 45, start), easing: 'cubic-bezier(.2, .9, .25, 1)', fill: 'backwards' }));
+  });
   let done = false;
   finishSwap = () => {
     if (done) return;
