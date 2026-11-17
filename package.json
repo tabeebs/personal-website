@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "start": "python -m http.server 5173",
-    "build": "esbuild src/sky.js src/doodles.js --bundle --format=esm --minify --legal-comments=none --outdir=build"
+    "build": "esbuild src/sky.js src/doodles.js src/favicon.js --bundle --format=esm --minify --legal-comments=none --outdir=build",
+    "favicon": "node scripts/favicon-png.js"
   },
   "devDependencies": {
     "esbuild": "0.28.2",
