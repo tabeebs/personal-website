@@ -116,15 +116,16 @@ function hideTip(delay = 0) {
 }
 
 // ---- views ----
-// Switching views: the panel eases to the new view's height (the sky's card follows it, see sky.js) and the lines
-// keep time with its edge. Shrinking, each old line blurs away just as the edge sweeps up over it, bottom first;
-// growing, each new line arrives as the edge uncovers it. New lines slide in from the side the lens went and come
-// into focus as they land. Lines are paragraphs, list rows, and anything marked .piece.
+// Switching views: the old view's lines blur away quickly, all together, then the panel eases to the new view's
+// height (the sky's card follows it, see sky.js), so nothing is ever left showing past the panel's edge. Growing,
+// each new line arrives as the edge uncovers it. New lines slide in from the side the lens went and come into
+// focus as they land. Lines are paragraphs, list rows, and anything marked .piece.
 const viewsEl = document.querySelector('.views');
 const pieces = (v) => [...v.querySelectorAll('.intro > *, li, .piece')];
 const EASE = 'cubic-bezier(.33, 1, .68, 1)';                    // ease-out cubic: 1 - (1 - u)^3
 const reach = (e) => 1 - Math.cbrt(1 - clamp(e, 0, 1));         // how far through the easing it covers fraction e
 const EDGE = 34;                                                // the card reaches this far below the views (sky.js)
+const OUT = 120;                                                // how long the old lines take to go, ms
 let finishSwap = null;
 function swap(from, to, dir, animate = true) {
   finishSwap?.();                                          // a switch still in flight lands at once
@@ -137,18 +138,15 @@ function swap(from, to, dir, animate = true) {
   const h1 = to.offsetHeight, span = Math.abs(h1 - h0), grow = h1 > h0;
   const D = clamp(260 + span * .6, 300, 460);
   const top = viewsEl.getBoundingClientRect().top, box = (el) => el.getBoundingClientRect();
-  // when (ms) the panel's edge passes a line at y, measured from the top of the views
-  const edgeAt = (y) => (span < 1 ? 0 : reach(grow ? (y - h0 - EDGE) / span : (h0 + EDGE - y) / span) * D);
+  const edgeAt = (y) => (span < 1 ? 0 : reach((y - h0 - EDGE) / span) * D);   // when (ms) a growing panel's edge passes y
   const anims = [];
-  pieces(from).forEach((el, i) => {
-    const r = box(el), mid = (r.top + r.bottom) / 2 - top;
-    const end = !grow && mid > h1 ? edgeAt(mid) : 0;       // lines the edge will cover go as it reaches them
-    anims.push(el.animate([
-      { opacity: 1, transform: 'none', filter: 'blur(0)' },
-      { opacity: 0, transform: `translateX(${-dir * 14}px)`, filter: 'blur(3px)' },
-    ], { duration: 170, delay: Math.max(i * 12, end - 170), easing: 'cubic-bezier(.4, 0, .9, .6)', fill: 'forwards' }));
-  });
-  anims.push(viewsEl.animate([{ height: `${h0}px` }, { height: `${h1}px` }], { duration: D, easing: EASE }));
+  // the old lines go quickly, all together, so none is left hanging over the sky once the panel starts to move
+  pieces(from).forEach((el) => anims.push(el.animate([
+    { opacity: 1, transform: 'none', filter: 'blur(0)' },
+    { opacity: 0, transform: `translateX(${-dir * 10}px)`, filter: 'blur(3px)' },
+  ], { duration: OUT, easing: 'cubic-bezier(.2, 0, .4, 1)', fill: 'forwards' })));
+  // shrinking waits for them to be gone; growing starts at once
+  anims.push(viewsEl.animate([{ height: `${h0}px` }, { height: `${h1}px` }], { duration: D, delay: grow ? 0 : OUT - 10, easing: EASE, fill: 'backwards' }));
   pieces(to).forEach((el, i) => {
     const r = box(el), start = grow ? edgeAt(r.bottom - top) : 0;   // lines the edge uncovers come as it does
     anims.push(el.animate([
