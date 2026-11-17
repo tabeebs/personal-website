@@ -108,11 +108,12 @@ html.playing, html.playing * { -webkit-user-select: none; user-select: none; }
   opacity: 0; transform: scale(.6); transition: opacity .25s, transform .45s cubic-bezier(.3, 1.6, .5, 1);
 }
 .tab[aria-selected="false"]:hover::before { opacity: 1; transform: none; }
+/* hovering a tab floats its doodle up with a springy pop and a soft shadow beneath; pressing squashes it */
 .tab .doodle { position: relative; width: 30px; height: 30px; margin: 0; transform-origin: 50% 85%;
-  transition: transform .45s cubic-bezier(.3, 1.7, .45, 1); }
+  transition: translate .5s cubic-bezier(.3, 1.8, .45, 1), scale .5s cubic-bezier(.3, 1.8, .45, 1), filter .3s; }
 .tab .doodle canvas { width: 30px; height: 30px; }
-.tab:hover .doodle, .tab:focus-visible .doodle { transform: translateY(-1.5px) rotate(-7deg) scale(1.06); }
-.tab:active .doodle { transform: translateY(1px) scale(.84, .78); transition-duration: .12s; }
+.tab:hover .doodle, .tab:focus-visible .doodle { translate: 0 -2.5px; scale: 1.14; filter: drop-shadow(0 3px 2px rgba(45, 58, 104, .16)); }
+.tab:active .doodle { translate: 0 1px; scale: .84 .78; filter: none; transition-duration: .12s; }
 .tab .doodle.hop { animation: hop .55s cubic-bezier(.3, 1.4, .5, 1); }
 @keyframes hop {
   0% { transform: scale(.84, .78); }
