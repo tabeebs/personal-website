@@ -1,6 +1,6 @@
 // The hello at the top of the panel. Each letter of a .hi heading is its own little body: the letters drop in and
-// bounce when the page opens, any letter hops (squash, jump, land) when the pointer brushes it, and clicking the
-// heading sends a wave through the whole word. A name marked .name gets a crayon highlighter swash behind it,
+// bounce when the page opens, and clicking the heading sends a wave of hops (squash, jump, land) through the
+// whole word. A name marked .name gets a crayon highlighter swash behind it,
 // in the meadow's crayon (src/crayon.js): mustard waxy strokes over a pastel layer printed a little out of
 // register, boiling on twos. It sweeps in from the left after the letters land, and again whenever its view
 // comes back.
@@ -36,7 +36,6 @@ function lettered(h) {
     if (ch === ' ') { shown.append(' '); continue; }
     const s = document.createElement('span');
     s.className = 'ch'; s.textContent = ch;
-    s.addEventListener('pointerenter', () => hop(s));
     shown.append(s); letters.push(s);
   }
   h.append(sr, shown);
