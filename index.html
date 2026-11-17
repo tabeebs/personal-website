@@ -9,19 +9,53 @@
 </head>
 <body>
   <canvas id="sky" aria-hidden="true"></canvas>
+  <!-- the tab bar lens's refraction; src/tabs.js draws the map for the lens's size -->
+  <svg width="0" height="0" style="position: absolute" aria-hidden="true" focusable="false">
+    <filter id="lens-refract" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feImage id="lens-map" x="0" y="0" width="1" height="1" preserveAspectRatio="none" result="map"/>
+      <feDisplacementMap id="lens-disp" in="SourceGraphic" in2="map" scale="16" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </svg>
 
   <main id="content">
-    <section class="intro">
-      <p>kia ora! i'm shaf, a CS student @ UNSW.</p>
-    </section>
+    <div class="panel">
+      <!-- Frosted glass tabs, top right of the panel (src/tabs.js). The selected tab sits under a clear lens you can
+           click or drag between them; hovering a tab says where it goes. -->
+      <nav class="tabs" role="tablist" aria-label="Sections">
+        <span class="lens" aria-hidden="true"><span class="lens-body"></span></span>
+        <button class="tab" type="button" role="tab" id="tab-home" aria-controls="view-home" aria-selected="true" aria-label="Home" data-view="home" data-hint="say hi, find me online">
+          <span class="doodle" data-doodle="house" data-size="30" aria-hidden="true"></span>
+        </button>
+        <button class="tab" type="button" role="tab" id="tab-experience" aria-controls="view-experience" aria-selected="false" aria-label="Experience" tabindex="-1" data-view="experience" data-hint="where i've worked">
+          <span class="doodle" data-doodle="briefcase" data-size="30" aria-hidden="true"></span>
+        </button>
+      </nav>
+      <span class="tip" aria-hidden="true"><span class="tip-text"><b></b><small></small></span></span>
 
-    <section class="collections" aria-label="Links">
-      <ul>
-        <li><a href="https://github.com/tabeebs" target="_blank" rel="noopener"><span class="doodle" data-doodle="github" aria-hidden="true"></span><span class="label">GitHub</span><span class="rule" aria-hidden="true"></span></a></li>
-        <li><a href="#"><span class="doodle" data-doodle="resume" aria-hidden="true"></span><span class="label">Resume</span><span class="rule" aria-hidden="true"></span></a></li>
-        <li><a href="https://www.linkedin.com/in/tabeebs/" target="_blank" rel="noopener"><span class="doodle" data-doodle="linkedin" aria-hidden="true"></span><span class="label">LinkedIn</span><span class="rule" aria-hidden="true"></span></a></li>
-      </ul>
-    </section>
+      <div class="views">
+        <section class="view" id="view-home" role="tabpanel" aria-labelledby="tab-home">
+          <section class="intro">
+            <p>kia ora! i'm shaf, a CS student @ UNSW.</p>
+          </section>
+
+          <section class="collections" aria-label="Links">
+            <ul>
+              <li><a href="https://github.com/tabeebs" target="_blank" rel="noopener"><span class="doodle" data-doodle="github" aria-hidden="true"></span><span class="label">GitHub</span><span class="rule" aria-hidden="true"></span></a></li>
+              <li><a href="#"><span class="doodle" data-doodle="resume" aria-hidden="true"></span><span class="label">Resume</span><span class="rule" aria-hidden="true"></span></a></li>
+              <li><a href="https://www.linkedin.com/in/tabeebs/" target="_blank" rel="noopener"><span class="doodle" data-doodle="linkedin" aria-hidden="true"></span><span class="label">LinkedIn</span><span class="rule" aria-hidden="true"></span></a></li>
+            </ul>
+          </section>
+        </section>
+
+        <!-- placeholder until the experience section is written -->
+        <section class="view" id="view-experience" role="tabpanel" aria-labelledby="tab-experience" hidden>
+          <section class="intro">
+            <p>experience</p>
+            <p class="soon">more on this soon.</p>
+          </section>
+        </section>
+      </div>
+    </div>
   </main>
 
   <canvas id="ground" aria-hidden="true"></canvas>
@@ -29,5 +63,6 @@
   <script type="module" src="build/sky.js"></script>
   <script type="module" src="build/doodles.js"></script>
   <script type="module" src="build/favicon.js"></script>
+  <script type="module" src="build/tabs.js"></script>
 </body>
 </html>
