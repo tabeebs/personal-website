@@ -90,10 +90,12 @@ function showTip(tab, { brief = false } = {}) {
   tipFor = tab;
   const text = tip.querySelector('.tip-text');
   text.textContent = tab.getAttribute('aria-label').toLowerCase();
-  // fit the label to its word, and keep it from running past the panel's right edge
+  // fit the label to its word and centre it under the tab; only on a screen too narrow for that does it shift
+  // left to stay in view (the nub still points at the tab)
   const w = text.offsetWidth + 20;
   const center = nav.offsetLeft + tab.offsetLeft + tab.offsetWidth / 2;
-  const x = Math.min(center - w / 2, nav.offsetLeft + nav.offsetWidth - w);
+  const room = document.documentElement.clientWidth - 6 - tip.offsetParent.getBoundingClientRect().left;
+  const x = Math.min(center - w / 2, room - w);
   const wasShown = tip.classList.contains('show');
   tip.classList.toggle('snap', !wasShown);   // appearing: pop up in place; already up: glide over
   tip.style.setProperty('--y', `${nav.offsetTop + nav.offsetHeight + 8}px`);
