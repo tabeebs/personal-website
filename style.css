@@ -76,7 +76,7 @@ html.playing, html.playing * { -webkit-user-select: none; user-select: none; }
 .views { position: relative; }
 .view { display: flow-root; }
 .view[hidden] { display: none; }
-.view > .intro:first-child { padding-right: 116px; min-height: 30px; }   /* the first line clears the tabs */
+.view > .intro:first-child { padding-right: 126px; min-height: 30px; }   /* the first line clears the tabs */
 .intro p:last-child { margin-bottom: 0; }
 .soon { color: var(--muted); }
 
@@ -85,7 +85,7 @@ html.playing, html.playing * { -webkit-user-select: none; user-select: none; }
    blur). The lens slides, squeezes and wobbles between tabs, and can be dragged. */
 .tabs {
   position: absolute; z-index: 2; top: -11px; right: -6px;
-  display: flex; padding: 4px; border-radius: 999px;
+  display: flex; gap: 10px; padding: 4px; border-radius: 999px;
   background: rgba(255, 255, 255, .5);
   -webkit-backdrop-filter: blur(14px) saturate(1.6); backdrop-filter: blur(14px) saturate(1.6);
   box-shadow:

@@ -183,17 +183,12 @@ function select(name, { focus = false, animate = true } = {}) {
 if (nav && lens && body) {
   refract();
 
-  // hover: a lean toward the tab, its tooltip, and (doodles.js) its drawing comes alive
+  // hover: its tooltip, and (doodles.js) its drawing comes alive
   let dragging = false;
   tabs.forEach((t) => {
     t.addEventListener('pointerenter', (e) => {
       if (e.pointerType !== 'mouse') return;
       showTip(t);
-      if (!dragging && t.dataset.view !== current) {
-        const at = xOf(tabs[names.indexOf(current)]);
-        S.x.to = at + Math.sign(xOf(t) - at) * 3;   // the lens leans toward the tab you might pick
-        go();
-      }
     });
     t.addEventListener('focus', () => { if (t.matches(':focus-visible')) showTip(t); });
     t.addEventListener('blur', () => hideTip(60));
@@ -207,7 +202,6 @@ if (nav && lens && body) {
   });
   nav.addEventListener('pointerleave', (e) => {
     if (e.pointerType === 'mouse') hideTip(90);
-    if (!dragging) { S.x.to = xOf(tabs[names.indexOf(current)]); go(); }
   });
 
   // drag the lens between the tabs, like a slider: it swells while held and snaps to the nearest tab on release
