@@ -1,8 +1,8 @@
 // The hello at the top of the panel. Each letter of a .hi heading is its own little body: the letters drop in and
-// bounce when the page opens, and hovering the word sends a wave of hops (squash, jump, land) through all of
-// it. A name marked .name gets a crayon highlighter swash behind it, in the meadow's crayon
-// (src/crayon.js): mustard waxy strokes over a pastel layer printed a little out of register, boiling on twos. It
-// sweeps in from the left half a second after the letters have landed, and again whenever its view comes back.
+// bounce when the page opens, and hovering the word sends a wave of hops (squash, jump, land) through all of it.
+// A name marked .name gets a crayon highlighter swash behind it, in the meadow's crayon (src/crayon.js): mustard
+// waxy strokes over a pastel layer printed a little out of register, boiling on twos. It sweeps in from the left
+// just after the letters have landed, and again whenever its view comes back.
 // Source for build/hello.js: rebuild with `npm run build` after editing.
 import { PAL, C, BOIL_MS, hash } from './crayon.js';
 
@@ -134,8 +134,8 @@ for (const view of document.querySelectorAll('.view')) {
       { transform: 'translateY(-2px) scale(.96, 1.04)', offset: .78 },
       { transform: 'none' },
     ], { duration: DROP, delay: 180 + i * 48, easing: 'cubic-bezier(.3, .7, .4, 1)', fill: 'backwards' }));
-    // half a second after the last letter has landed
-    names.forEach((n) => n.sweep(180 + Math.max(0, letters.length - 1) * 48 + DROP + 500));
+    // a tenth of a second after the last letter has landed
+    names.forEach((n) => n.sweep(180 + Math.max(0, letters.length - 1) * 48 + DROP + 100));
   }
   // coming back to a view: a wave through its heading, and the swash sweeps in again
   new MutationObserver(() => {
