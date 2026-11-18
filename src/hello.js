@@ -134,7 +134,9 @@ function swash(el) {
   }
   el.addEventListener('pointerenter', () => { alive = true; wake(); });
   el.addEventListener('pointerleave', () => { alive = false; wake(); });
-  new ResizeObserver(() => { size(); paint(); }).observe(el);
+  // watch the canvas, not the name: an inline element never reports a new size, so a name first drawn while its
+  // view was hidden (the page opened on another tab) would keep a canvas of no size and never show its swash
+  new ResizeObserver(() => { size(); paint(); }).observe(cv);
   new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible) wake(); }).observe(el);
   size();
   return { sweep };

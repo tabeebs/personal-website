@@ -16,6 +16,14 @@ const calm = matchMedia('(prefers-reduced-motion: reduce)');
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const names = tabs.map((t) => t.dataset.view);
 let current = null;
+// Each view has its own path: / for the first, /experience and so on for the rest. The host serves the page for
+// any path (Cloudflare Pages, and scripts/serve.js locally), and this picks the view from it. Old links that
+// used a hash (/#experience) still open the right view, and their URL is tidied to the path.
+const pathOf = (name) => (name === names[0] ? '/' : `/${name}`);
+function fromUrl() {
+  const hash = location.hash.slice(1), path = decodeURIComponent(location.pathname).replace(/^\/+|\/+$/g, '').toLowerCase();
+  return names.includes(hash) ? hash : names.includes(path) ? path : names[0];
+}
 
 // ---- refraction ----
 // A displacement map for a pill of the lens's size: near the rim the glass bends what's beneath it outward,
@@ -168,7 +176,7 @@ function swap(from, to, dir, animate = true) {
   Promise.all(anims.map((a) => a.finished)).then(finishSwap, () => {});
 }
 
-function select(name, { focus = false, animate = true } = {}) {
+function select(name, { focus = false, animate = true, push = true } = {}) {
   if (!names.includes(name)) name = names[0];
   const i = names.indexOf(name), tab = tabs[i], prev = current;
   for (const t of tabs) {
@@ -190,7 +198,13 @@ function select(name, { focus = false, animate = true } = {}) {
   }
   current = name;
   if (focus) tab.focus();
-  history.replaceState(null, '', name === names[0] ? location.pathname + location.search : `#${name}`);
+  // a new tab is a new page in the history, so the back button goes back to the last one; opening the page, or
+  // going back and forward, just tidies the URL
+  const url = pathOf(name) + location.search;
+  if (location.pathname + location.search + location.hash !== url) {
+    history[push && prev !== null && prev !== name ? 'pushState' : 'replaceState'](null, '', url);
+  }
+  document.title = name === names[0] ? 'tabeebs' : `tabeebs · ${tab.getAttribute('aria-label').toLowerCase()}`;
 }
 
 if (nav && lens && body) {
@@ -270,10 +284,11 @@ if (nav && lens && body) {
   });
 
   new ResizeObserver(() => { refract(); S.x.to = S.x.v = xOf(tabs[names.indexOf(current)]); apply(); }).observe(nav);
-  select(location.hash.slice(1) || names[0], { animate: false });
+  select(fromUrl(), { animate: false });
   if (current !== names[0]) {
     // opened straight onto another view: show it without a transition
     for (const n of names) document.getElementById(`view-${n}`).hidden = n !== current;
   }
-  addEventListener('hashchange', () => select(location.hash.slice(1) || names[0]));
+  addEventListener('popstate', () => select(fromUrl(), { push: false }));
+  addEventListener('hashchange', () => select(fromUrl(), { push: false }));
 }
