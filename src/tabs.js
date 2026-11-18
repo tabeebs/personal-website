@@ -123,7 +123,7 @@ function hideTip(delay = 0) {
 // each new line arrives as the edge uncovers it. New lines slide in from the side the lens went and come into
 // focus as they land. Lines are paragraphs, list rows, and anything marked .piece.
 const viewsEl = document.querySelector('.views');
-const pieces = (v) => [...v.querySelectorAll('.intro > *, li:not(.sr li), .piece')];   // not the screen-reader-only list
+const pieces = (v) => [...v.querySelectorAll('.intro > *, li, .piece')];
 const EASE = 'cubic-bezier(.33, 1, .68, 1)';                    // ease-out cubic: 1 - (1 - u)^3
 const reach = (e) => 1 - Math.cbrt(1 - clamp(e, 0, 1));         // how far through the easing it covers fraction e
 const EDGE = 34;                                                // the card reaches this far below the views (sky.js)
