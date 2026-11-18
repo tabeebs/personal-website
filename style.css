@@ -109,15 +109,14 @@ html.playing, html.playing * { -webkit-user-select: none; user-select: none; }
 .logo-button:hover { transform: scale(1.06); }
 .logo-button:active { transform: scale(.94); transition-duration: .1s; }
 .says .layer { position: absolute; inset: 0; border-radius: 30%; box-shadow: 0 .06em .18em rgba(20, 30, 60, .16); }
-/* logo tiles: app-icon squares with a soft inner edge; until a logo file exists, the org's initial */
-.says .tile { position: relative; display: grid; place-items: center; width: 100%; height: 100%; border-radius: 30%; overflow: hidden;
-  background: #fff; font-size: .5em; font-weight: 700; letter-spacing: 0; color: #2d3a68; }
+/* logo tiles: square app icons edge to edge, all exactly the same size, with a soft inner edge like Mobbin's */
+.says .tile { position: relative; display: block; width: 100%; height: 100%; border-radius: 30%; overflow: hidden; background: #fff; }
+.says .tile img { display: block; width: 100%; height: 100%; object-fit: cover; -webkit-user-select: none; user-select: none; }
 .says .tile::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1px rgba(20, 30, 60, .1); pointer-events: none; }
-.says .tile img { width: 78%; height: 78%; object-fit: contain; }
-.says .tile.dark { background: #000; }
-.says .tile.dark img { width: 100%; height: 100%; object-fit: cover; }
-.says .tile.mono { background: var(--tint); }
-.says .tile.mono.dark { color: #fff; }
+.says .tile.mono { display: grid; place-items: center; font-size: .5em; font-weight: 700; color: #2d3a68; }
+/* the glint that runs across a logo as it arrives */
+.says .glint { position: absolute; top: -20%; bottom: -20%; left: 0; width: 60%; opacity: 0; pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .6) 50%, transparent); }
 @media (prefers-reduced-motion: reduce) { .says .word, .logo-button { transition: none; } }
 
 /* Frosted glass tabs, top right of the panel. A frosted track; the selected tab sits under a thick clear lens
