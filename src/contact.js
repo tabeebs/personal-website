@@ -1,6 +1,5 @@
 // The Email row doesn't open a mail app: clicking it copies the address, and a little tomato label (the email
-// doodle's colour) pops up beside "Email" to say so. "CV on request", tucked in the panel's bottom right corner,
-// copies it too, with its own label (data-copied) popping up above it. The small bit of effort keeps the emails that do arrive
+// doodle's colour) pops up under "Email" to say so. The small bit of effort keeps the emails that do arrive
 // mostly from real people. The address is put together here rather than written in the page, so scrapers
 // reading the HTML don't find it. If the clipboard isn't available, the label shows the address instead.
 // Source for build/contact.js: rebuild with `npm run build` after editing.
@@ -8,8 +7,7 @@
 const ADDRESS = ['hi', 'tabeebs.com'].join('@');
 
 for (const btn of document.querySelectorAll('[data-copy-email]')) {
-  const host = btn.querySelector('.label') || btn;
-  const done = btn.dataset.copied || 'copied to clipboard!';
+  const host = btn.querySelector('.label');
   const tip = document.createElement('span');
   tip.className = 'copied';
   tip.setAttribute('aria-hidden', 'true');
@@ -32,7 +30,7 @@ for (const btn of document.querySelectorAll('[data-copy-email]')) {
   btn.addEventListener('click', async () => {
     try {
       await navigator.clipboard.writeText(ADDRESS);
-      say(done, 1800);
+      say('copied to clipboard!', 1800);
     } catch {
       say(ADDRESS, 6000);
     }
