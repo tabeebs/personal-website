@@ -201,8 +201,29 @@ html.playing, html.playing * { -webkit-user-select: none; user-select: none; }
 .collections ul { list-style: none; padding: 0; margin: 0; }
 /* each row is one link: icon, name, then a leader line that fills in on hover */
 .collections li { font-size: 14px; }
-.collections li a { display: flex; align-items: center; gap: 14px; padding: 5px 0; text-decoration: none; border-radius: 6px; }
-.collections li a:focus-visible { outline: 2px solid #2d3a68; outline-offset: 4px; }
+.collections li :is(a, button) { display: flex; align-items: center; gap: 14px; padding: 5px 0; text-decoration: none; border-radius: 6px; }
+.collections li :is(a, button):focus-visible { outline: 2px solid #2d3a68; outline-offset: 4px; }
+/* the Email row is a button that copies the address (src/contact.js); it looks just like the links */
+.collections li button { width: 100%; margin: 0; border: 0; background: none; font: inherit; color: inherit; text-align: left;
+  cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.collections .label { position: relative; }
+/* "copied to clipboard!": a little tomato label that pops up beside "Email", nub pointing back at it */
+.copied {
+  position: absolute; left: calc(100% + 12px); top: 50%; z-index: 3;
+  padding: 2px 10px 3px; border-radius: 999px; white-space: nowrap; pointer-events: none;
+  background: #f9cfc5; color: #2d3a68; font-size: 11.5px; font-weight: 600; line-height: 1.3; letter-spacing: .01em;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7), 0 0 0 .5px rgba(45, 58, 104, .16), 0 5px 12px -5px rgba(45, 58, 104, .35);
+  opacity: 0; transform: translate(-6px, -50%) scale(.5); transform-origin: -6px 50%;
+  transition: opacity .15s, transform .25s cubic-bezier(.3, 1.5, .5, 1);
+}
+.copied::before {   /* the nub, pointing left at "Email" */
+  content: ""; position: absolute; left: -3px; top: calc(50% - 4px); width: 8px; height: 8px; border-radius: 0 0 0 2px;
+  background: inherit; transform: rotate(45deg);
+}
+.copied.show { opacity: 1; transform: translate(0, -50%); transition: opacity .15s, transform .5s cubic-bezier(.3, 1.8, .5, 1); }
+@media (prefers-reduced-motion: reduce) { .copied, .copied.show { transition: none; } }
+/* bottom right of the panel, a quiet note that the CV is there for anyone who asks */
+.cv { margin: 10px 0 0; text-align: right; font-size: 12.5px; color: var(--muted); }
 
 /* Crayon icons beside each link (src/doodles.js). They tip and lift a little on hover. */
 .doodle {
