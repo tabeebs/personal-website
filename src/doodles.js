@@ -139,6 +139,9 @@ const DRAWINGS = {
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
 // each icon's own crayon, used for its leader line
 const INK = { github: C.navy, email: C.tomato, linkedin: C.blue };
+// how fast a drawing settles back once the pointer leaves, per drawing (per tick); LinkedIn's dot and badge
+// tuck away quickly rather than hanging around
+const SETTLE = { linkedin: .34 };
 const DOT = '#b4bcc6';                  // the leader's resting dots, a light grey like the sky's small dots
 const STEP = 8;                         // one dot per sky cell width
 const insideShape = (it, x, y) => inside(it.pts, x, y) && !it.holes.some((h) => inside(h, x, y));
@@ -278,7 +281,7 @@ function doodle(el) {
     if (!visible) return;
     const alive = t > 0 || target > 0;
     if (reduced) { t = target; paint(); return; }
-    t = target > t ? Math.min(1, t + .22) : Math.max(0, t - .16);
+    t = target > t ? Math.min(1, t + .22) : Math.max(0, t - (SETTLE[el.dataset.doodle] ?? .16));
     frame++;
     paint();
     timer = setTimeout(tick, alive ? BOIL_MS : BOIL_MS * 3.2);
