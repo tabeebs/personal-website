@@ -1,6 +1,6 @@
 // The hello at the top of the panel. Each letter of a .hi heading is its own little body: the letters drop in and
 // bounce when the page opens, and hovering the word sends a wave of hops (squash, jump, land) through all of it.
-// A heading with data-meaning also says what the word means: a little label bounces out beside it while it's
+// A heading with data-meaning also says what the word means: a little label bounces up above it while it's
 // hovered (or for a moment after a tap), like the tabs' labels.
 // A name marked .name gets a crayon highlighter swash behind it, in the meadow's crayon (src/crayon.js): mustard
 // waxy strokes over a pastel layer printed a little out of register, boiling on twos. It sweeps in from the left
@@ -45,7 +45,7 @@ function lettered(h) {
   return letters;
 }
 
-// what the word means, in a label that pops out beside it
+// what the word means, in a label that pops up above it
 function meaning(h, shown, sr) {
   const tip = document.createElement('span');
   tip.className = 'meaning';
