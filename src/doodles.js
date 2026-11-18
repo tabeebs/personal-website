@@ -3,7 +3,7 @@
 // strokes over a pastel layer printed slightly out of register (letters and the Octocat are paper left bare),
 // the linework is navy crayon, and the whole drawing redraws a few times a second.
 // At rest a drawing boils slowly. Hovering its row (or focusing its link) boils it on twos, slides the colour
-// layer into register, and the drawing comes to life: the Octocat perks its ears and lifts its tail, the envelope
+// layer into register, and the drawing comes to life: the Octocat perks up, smiles and waves a paw, the envelope
 // opens and a letter rises out, the dot on the LinkedIn i hops. Hovering a tab does the same for its button.
 // Each row also has a leader line: a row of small ASCII dots on the sky's 8px rhythm. As its icon comes to
 // life, a crayon dash in the icon's colour sweeps along it from the name and finishes in a little arrow.
@@ -61,7 +61,7 @@ const DRAWINGS = {
     out.push(line(rect(4.5, 11, 31.5, 29.5).concat([[4.5, 11]]), C.navy, 1.1));
     return out;
   },
-  // GitHub: the Octocat mark, a crayon circle with the cat left as bare paper
+  // GitHub: the Octocat mark, a crayon circle with the cat left as bare paper; on hover it perks up and waves
   github(t) {
     const g = ease(t), ear = g * 1.1, tail = g;
     const cat = [
@@ -70,10 +70,27 @@ const DRAWINGS = {
       [12.4, 27.4 - tail * .6], [10.6, 25.8 - tail * 1.4], [9.6 - tail * .4, 23.6 - tail * 2.2], [11.1, 23.9 - tail * 1.4], [12.6, 25.2 - tail * .6], [14.7, 25],
       [14.8, 23.6], [15.7, 22], [14.5, 21.3], [12, 19.2], [11, 15.6], [11.4, 12.4],
     ];
-    return [
+    const out = [
       fill(circle(18, 18, 14.2, 20), C.navy, C.lilac, [cat]),
       line(circle(18, 18, 14.2, 20).concat([[18 + 14.2, 18]]), C.navy, 1.1),
     ];
+    // on hover its eyes squint into a smile and it reaches a paw out past the circle to wave hello
+    if (g > .05) {
+      const reach = backOut(clamp01((t - .1) / .6));
+      const swing = Math.sin(performance.now() / 150) * .34 * clamp01((t - .45) / .3);   // about two waves a second
+      const sx = 24.2, sy = 18.6, len = 3 + 7.6 * reach, a = -1.2 + swing;
+      const ex = sx + Math.cos(a) * len, ey = sy + Math.sin(a) * len, nx = -Math.sin(a) * 1.9, ny = Math.cos(a) * 1.9;
+      const arm = [[sx + nx, sy + ny], [ex + nx, ey + ny], [ex - nx, ey - ny], [sx - nx, sy - ny]];
+      const paw = circle(ex, ey, 2.7 * reach, 10);
+      out.push(fill(arm, C.lilac, C.lilacP), line(arm.slice(0, 2), C.navy, 1), line(arm.slice(2), C.navy, 1));
+      out.push(fill(paw, C.lilac, C.lilacP), line(paw.concat([paw[0]]), C.navy, 1));
+      const k = clamp01((t - .3) / .4);
+      if (k > 0) {
+        out.push(line([[14.6, 16.6], [15.6, 15.6 - .4 * k], [16.6, 16.6]], C.navy, .9));
+        out.push(line([[19.4, 16.6], [20.4, 15.6 - .4 * k], [21.4, 16.6]], C.navy, .9));
+      }
+    }
+    return out;
   },
   // LinkedIn: the rounded square with "in" left as bare paper; the dot on the i hops
   // on hover the dot of the i pops up as a mustard blob and a little notification badge pops onto the corner
