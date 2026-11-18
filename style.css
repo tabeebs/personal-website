@@ -91,10 +91,10 @@ html.playing, html.playing * { -webkit-user-select: none; user-select: none; }
 /* Experience (src/experience.js): two sentences whose endings keep changing, after Mobbin's headline. */
 .says {
   --icon-size: .85em; --icon-drop: .075em; --icon-gap: .2em;
-  margin: 0; font-size: clamp(19px, 3.6vw, 23px); line-height: 1.22; font-weight: 650; letter-spacing: -.022em; color: var(--text);
+  margin: 0; font-size: clamp(17px, 3.4vw, 21px); line-height: 1.22; font-weight: 650; letter-spacing: -.022em; color: var(--text);
 }
 .says + .says { margin-top: .85em; }
-.says .lead { display: block; color: var(--muted); }
+.says .lead { color: var(--muted); }
 .says .tail { white-space: nowrap; }            /* a logo always stays with its name */
 /* a word that changes: old and new text crossfade through a blur while its width eases to the new word */
 .says .word { position: relative; display: inline-block; white-space: nowrap; vertical-align: bottom; cursor: pointer;

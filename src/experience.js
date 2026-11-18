@@ -104,7 +104,7 @@ function sentence(lead, items, offset) {
   const leadEl = document.createElement('span'); leadEl.className = 'lead'; leadEl.textContent = lead;
   const tail = document.createElement('span'); tail.className = 'tail';   // a logo always stays with its name
   tail.append(logo, org, '.');
-  p.append(leadEl, role, ' @', tail);
+  p.append(leadEl, ' ', role, ' @', tail);
   host.append(p);
 
   // hold room for the longest ending, so the panel never jumps when a line moves on to one that wraps
