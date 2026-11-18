@@ -1,6 +1,6 @@
 // The Experience view: two sentences whose endings keep changing, after Mobbin's headline (mobbin.com).
-//   i'm currently a  Data Science Intern @ [logo] Salesforce.
-//   before that, i was a  Tech Director @ [logo] UNSW DataSoc.
+//   i'm currently a  Data Science Intern at [logo] Salesforce.
+//   before that, i was a  Tech Director at [logo] UNSW DataSoc.
 // Each line moves on by itself every few seconds (the two take turns), or when its logo or words are clicked. The
 // role, the logo and the name change in a quick left-to-right wave: words blur up and away while the new ones
 // blur in from below and the line eases to its new length; the old logo blurs and shrinks away and the new one
@@ -12,7 +12,7 @@
 
 const NOW = [
   { role: 'Data Science Intern', org: 'Salesforce', logo: null, mono: 'S', tint: '#d6ecfb' },
-  { role: 'Research Assistant', org: 'Kirby Institute', logo: null, mono: 'K', tint: '#e6e2f6' },
+  { role: 'Research Assistant', org: 'the Kirby Institute', logo: null, mono: 'K', tint: '#e6e2f6' },
   { role: 'Teaching Assistant', org: 'UNSW CSE', logo: null, mono: 'U', tint: '#fbe6ae' },
 ];
 const BEFORE = [
@@ -104,7 +104,7 @@ function sentence(lead, items, offset) {
   const leadEl = document.createElement('span'); leadEl.className = 'lead'; leadEl.textContent = lead;
   const tail = document.createElement('span'); tail.className = 'tail';   // a logo always stays with its name
   tail.append(logo, org, '.');
-  p.append(leadEl, role, ' @', tail);
+  p.append(leadEl, role, ' at', tail);
   host.append(p);
 
   // hold room for the longest ending, so the panel never jumps when a line moves on to one that wraps
