@@ -247,19 +247,19 @@ html.intro-go[data-intro] :is(.panel, .intro .hi ~ p, .cv, #ground) { animation-
 /* "UNSW" in the uni's own wordmark (from the official vector logo UNSW's handbook site serves; at 11.5px tall its caps
    match the sentence's). Hovering opens a slot in front of it, from nothing to the shield's width plus a gap either side,
    easing the word (and the full stop) right as the shield fades up into it out of a soft blur; leaving eases it all
-   back. The shield (the same logo's crest without its motto scroll) sits on the baseline at the wordmark's height,
-   so nothing grows taller than the letters. After mobbin.com's hero. */
+   back. The shield (the same logo's crest without its motto scroll) is a little taller than the letters
+   and centred on them. After mobbin.com's hero. */
 .intro a.unsw { display: inline-flex; align-items: baseline; white-space: nowrap; text-decoration: none; outline: none; }
 a.unsw:focus-visible { outline: 2px solid #2d3a68; outline-offset: 3px; border-radius: 3px; }
 .unsw img { display: block; user-select: none; -webkit-user-drag: none; }
 .unsw-mark { height: 11.5px; width: auto; margin: 0 1px; transform: translateY(.5px); }
 .unsw-slot {
-  --h: 11.5px; --w: calc(var(--h) * 63.43 / 83.4); --gap: 3px;
+  --h: 11.5px; --shield-h: 15px; --w: calc(var(--shield-h) * 63.43 / 83.4); --gap: 3px;   /* the slot keeps the letters' height; the shield is a touch taller */
   position: relative; display: block; height: var(--h); width: 0; transform: translateY(.5px);
   transition: width .42s cubic-bezier(.65, 0, .35, 1) .04s;   /* closing: waits a beat for the shield to start going */
 }
 .unsw-slot img {
-  position: absolute; left: 50%; bottom: 0; height: var(--h); width: auto;
+  position: absolute; left: 50%; bottom: calc((var(--h) - var(--shield-h)) / 2); height: var(--shield-h); width: auto;   /* centred on the caps */
   opacity: 0; filter: blur(2px); transform: translateX(-50%) scale(.6); transform-origin: 50% 70%;
   transition: opacity .24s ease, filter .3s ease, transform .36s cubic-bezier(.65, 0, .35, 1);
   will-change: opacity, transform, filter;
