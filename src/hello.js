@@ -63,6 +63,7 @@ function meaning(h, shown, sr) {
 
 // ---- the crayon swash behind a name ----
 const HX = 2.4, HY = 3.6;   // hatch cell, as on the doodles
+const SWEEP = 700;   // how long the swash takes to sweep in under a name, ms
 function swash(el) {
   const cv = document.createElement('canvas');
   cv.setAttribute('aria-hidden', 'true');
@@ -122,14 +123,16 @@ function swash(el) {
     if (calm.matches) { reveal = 1; paint(); return Promise.resolve(); }
     reveal = 0; paint();
     const run = ++sweeping, t0 = performance.now() + delay;
-    // (it settles once the swash is all there, or once a newer sweep takes over)
+    // (it settles once the swash is about three quarters there, so the opening moves on while it finishes, or once a
+    // newer sweep takes over)
     return new Promise((done) => {
       const step = (now) => {
         if (run !== sweeping) { done(); return; }
-        const k = Math.min(1, Math.max(0, (now - t0) / 520));
-        reveal = 1 - (1 - k) ** 3;
+        const k = Math.min(1, Math.max(0, (now - t0) / SWEEP));
+        reveal = 1 - (1 - k) ** 2;   // eases off gently, like a hand finishing a stroke
         paint();
-        if (k < 1) requestAnimationFrame(step); else { sweeping = 0; done(); }
+        if (reveal >= .75) done();
+        if (k < 1) requestAnimationFrame(step); else sweeping = 0;
       };
       requestAnimationFrame(step);
       wake();
@@ -142,12 +145,23 @@ function swash(el) {
   new ResizeObserver(() => { size(); paint(); }).observe(cv);
   new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible) wake(); }).observe(el);
   size();
-  return { sweep };
+  return { el, sweep };
 }
 
 // ---- wiring ----
 const DROP = 640;   // how long each letter takes to drop in and settle, ms
-// the page's opening swashes, all swept in: the underline under "the web" waits for this (src/web.js)
+// Each step of the opening starts a beat after the one before has landed: once it's this far through, when what's
+// left of it is barely seen (src/web.js does the same)
+const BEAT = 60, LANDED = .8;
+// when every animation on these elements has landed
+const landed = (els) => Promise.all(els.flatMap((e) => e.getAnimations()).map(async (a) => {
+  try { await a.ready; } catch { return; }
+  const { delay, activeDuration } = a.effect.getComputedTiming();
+  const wait = (delay + activeDuration * LANDED - (a.currentTime ?? 0)) / (a.playbackRate || 1);
+  if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+}));
+const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+// the page's opening swashes, all swept in
 const opening = [];
 for (const view of document.querySelectorAll('.view')) {
   const letters = [...view.querySelectorAll('.hi')].flatMap(lettered);
@@ -161,8 +175,10 @@ for (const view of document.querySelectorAll('.view')) {
       { transform: 'translateY(-2px) scale(.96, 1.04)', offset: .78 },
       { transform: 'none' },
     ], { duration: DROP, delay: 180 + i * 48, easing: 'cubic-bezier(.3, .7, .4, 1)', fill: 'backwards' }));
-    // a tenth of a second after the last letter has landed
-    return Promise.all(names.map((n) => n.sweep(180 + Math.max(0, letters.length - 1) * 48 + DROP + 100)));
+    // once the letters have landed and the name's line has risen into place (src/intro.js), a beat later
+    const lines = [...new Set(names.map((n) => n.el.closest('p') || n.el))];
+    return landed([...letters, ...lines]).then(() => pause(BEAT))
+      .then(() => Promise.all(names.map((n) => n.sweep())));
   }));
   // coming back to a view: a wave through its heading, and the swash sweeps in again
   new MutationObserver(() => {
@@ -171,4 +187,6 @@ for (const view of document.querySelectorAll('.view')) {
     names.forEach((n) => n.sweep(420));
   }).observe(view, { attributes: true, attributeFilter: ['hidden'] });
 }
-window.__swashed = Promise.all(opening);
+// and as the swash nears its end, the opening goes on to the next line ("welcome to my little corner of the web"); the
+// underline under "the web" waits for this, then for that line to rise (src/web.js)
+window.__swashed = Promise.all(opening).then(() => window.__intro?.next?.());
