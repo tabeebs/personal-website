@@ -187,6 +187,7 @@ for (const view of document.querySelectorAll('.view')) {
     names.forEach((n) => n.sweep(420));
   }).observe(view, { attributes: true, attributeFilter: ['hidden'] });
 }
-// and as the swash nears its end, the opening goes on to the next line ("welcome to my little corner of the web"); the
-// underline under "the web" waits for this, then for that line to rise (src/web.js)
-window.__swashed = Promise.all(opening).then(() => window.__intro?.next?.());
+// as the swash nears its end, the coil draws in under "the web", in the same paragraph (src/web.js waits for this), and
+// once that has drawn in, the opening goes on to the CV note
+window.__swashed = Promise.all(opening);
+window.__swashed.then(() => window.__coiled).then(() => window.__intro?.next?.());
