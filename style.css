@@ -71,18 +71,15 @@ a { color: inherit; }
    doesn't select anything. */
 html.playing, html.playing * { -webkit-user-select: none; user-select: none; }
 
-/* The panel holds the tabs and whichever view is open; the sky draws its soft card around it (src/sky.js). */
+/* The panel holds the home page; the sky draws its soft card around it (src/sky.js). */
 .panel { position: relative; }
-.views { position: relative; }
 .view { display: flow-root; }
-.view[hidden] { display: none; }
-.view > .intro:first-child > :first-child { padding-right: 126px; }   /* the greeting clears the tabs */
 
 /* The greeting (src/hello.js): a big navy "kia ora!" whose letters drop in and wave when hovered, and a crayon
    highlighter swash behind the name. */
 .hi { margin: 0 0 14px; font-size: 27px; line-height: 34px; font-weight: 650; letter-spacing: -.025em; color: #2d3a68; cursor: default; }
 .hi .ch { display: inline-block; transform-origin: 50% 90%; }
-/* "kia ora!" says what it means: a little mint label (the home tab's is mustard, experience's peach) that bounces
+/* "kia ora!" says what it means: a little mint label that bounces
    up above it, nub pointing down at it */
 .hi .glossed { position: relative; display: inline-block; }
 .meaning {
@@ -124,92 +121,6 @@ html.playing, html.playing * { -webkit-user-select: none; user-select: none; }
 .intro p:last-child { margin-bottom: 0; }
 .soon { color: var(--muted); }
 
-/* Frosted glass tabs, top right of the panel. A frosted track; the selected tab sits under a thick clear lens
-   that refracts what's beneath its rim (src/tabs.js draws the refraction map; Chromium bends, other browsers
-   blur). The lens slides, squeezes and wobbles between tabs, and can be dragged. */
-.tabs {
-  position: absolute; z-index: 2; top: -7px; right: -6px;   /* centred on the greeting's line */
-  display: flex; gap: 10px; padding: 4px; border-radius: 999px;
-  background: rgba(255, 255, 255, .5);
-  -webkit-backdrop-filter: blur(14px) saturate(1.6); backdrop-filter: blur(14px) saturate(1.6);
-  box-shadow:
-    inset 0 1px 2px rgba(45, 58, 104, .14), inset 0 -1px 0 rgba(255, 255, 255, .8),
-    0 0 0 .5px rgba(45, 58, 104, .12), 0 0 0 1px rgba(255, 255, 255, .5),
-    0 8px 22px -6px rgba(40, 80, 130, .22);
-  touch-action: pan-y; -webkit-user-select: none; user-select: none;
-}
-.tab {
-  position: relative; z-index: 1;
-  display: grid; place-items: center; width: 46px; height: 40px; padding: 0;
-  border: 0; border-radius: 999px; background: none; cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-.tab:focus-visible { outline: 2px solid #2d3a68; outline-offset: 1px; }
-/* hovering a tab raises a faint bubble of frost under it */
-.tab::before {
-  content: ""; position: absolute; inset: 3px; border-radius: inherit; background: rgba(255, 255, 255, .7);
-  box-shadow: 0 0 0 .5px rgba(45, 58, 104, .08);
-  opacity: 0; transform: scale(.6); transition: opacity .25s, transform .45s cubic-bezier(.3, 1.6, .5, 1);
-}
-.tab[aria-selected="false"]:hover::before { opacity: 1; transform: none; }
-/* hovering a tab floats its doodle up with a springy pop and a soft shadow beneath; pressing squashes it */
-.tab .doodle { position: relative; width: 30px; height: 30px; margin: 0; transform-origin: 50% 85%;
-  transition: translate .5s cubic-bezier(.3, 1.8, .45, 1), scale .5s cubic-bezier(.3, 1.8, .45, 1), filter .3s; }
-.tab .doodle canvas { width: 30px; height: 30px; }
-.tab:hover .doodle, .tab:focus-visible .doodle { translate: 0 -2.5px; scale: 1.14; filter: drop-shadow(0 3px 2px rgba(45, 58, 104, .16)); }
-/* a press dips it only a little, and choosing a tab gives it one small, soft hop */
-.tab:active .doodle { translate: 0 -1.5px; scale: 1.09 1.04; transition: translate .18s ease-out, scale .18s ease-out, filter .3s; }
-.tab .doodle.hop { animation: hop .5s cubic-bezier(.3, .8, .4, 1); }
-@keyframes hop {
-  0% { transform: scale(.97, .95); }
-  40% { transform: translateY(-2px) scale(.99, 1.03); }
-  70% { transform: translateY(0) scale(1.02, .98); }
-  100% { transform: none; }
-}
-
-.lens { position: absolute; z-index: 2; left: 0; top: 4px; height: 40px; width: 46px; pointer-events: none; will-change: transform, width; }
-.lens-body {
-  position: absolute; inset: 0; border-radius: 999px; overflow: hidden;
-  background: rgba(255, 255, 255, .16);
-  -webkit-backdrop-filter: blur(.4px) saturate(1.3) brightness(1.05); backdrop-filter: blur(.4px) saturate(1.3) brightness(1.05);
-  box-shadow:
-    inset 0 1.5px 0 rgba(255, 255, 255, .95),        /* top rim catching the light */
-    inset 0 0 0 1px rgba(255, 255, 255, .6),          /* edge of the glass */
-    inset 0 -3px 5px rgba(45, 58, 104, .12),          /* thickness at the bottom */
-    inset 3px 0 6px -2px rgba(255, 255, 255, .55), inset -3px 0 6px -2px rgba(255, 255, 255, .55),
-    0 5px 14px rgba(40, 70, 110, .2), 0 1px 3px rgba(40, 70, 110, .16);
-}
-/* specular highlight near the top, and a soft caustic glow along the bottom */
-.lens-body::before { content: ""; position: absolute; left: 14%; right: 30%; top: 8%; height: 32%; border-radius: 999px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, .8), rgba(255, 255, 255, 0)); filter: blur(.5px); }
-.lens-body::after { content: ""; position: absolute; left: 20%; right: 20%; bottom: 5%; height: 24%; border-radius: 999px;
-  background: radial-gradient(closest-side, rgba(255, 255, 255, .6), rgba(255, 255, 255, 0)); }
-
-/* One little label under the tabs, tinted to match the tab's doodle. It bounces up when you hover a tab and hops
-   across, taking the next tab's tint, when you move to the other one. */
-.tip {
-  --x: 0px; --y: 52px; --w: 60px; --nub: 50%; --tint: #fff;
-  position: absolute; z-index: 3; top: var(--y); left: var(--x); width: var(--w);
-  padding: 2px 0 3px; border-radius: 999px; text-align: center; pointer-events: none;
-  background: var(--tint);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7), 0 0 0 .5px rgba(45, 58, 104, .16), 0 5px 12px -5px rgba(45, 58, 104, .35);
-  opacity: 0; transform: translateY(-5px) scale(.5); transform-origin: var(--nub) -6px;
-  transition: opacity .15s, transform .25s cubic-bezier(.3, 1.5, .5, 1), left .4s cubic-bezier(.3, 1.4, .5, 1),
-    width .4s cubic-bezier(.3, 1.4, .5, 1), background-color .3s;
-}
-.tip.show { opacity: 1; transform: none; transition: opacity .15s, transform .5s cubic-bezier(.3, 1.8, .5, 1),
-  left .4s cubic-bezier(.3, 1.4, .5, 1), width .4s cubic-bezier(.3, 1.4, .5, 1), background-color .3s; }
-.tip.snap { transition: opacity .15s, transform .5s cubic-bezier(.3, 1.8, .5, 1), background-color .3s; }
-.tip::before {   /* a tiny nub, pointing up at the tab */
-  content: ""; position: absolute; top: -3px; left: calc(var(--nub) - 4px); width: 8px; height: 8px; border-radius: 2px 0 0 0;
-  background: inherit; transform: rotate(45deg); transition: left .4s cubic-bezier(.3, 1.4, .5, 1);
-}
-.tip.snap::before { transition: none; }
-.tip-text { position: relative; display: inline-block; white-space: nowrap; font-size: 11.5px; font-weight: 600; line-height: 1.3;
-  letter-spacing: .01em; color: #2d3a68; }
-@media (prefers-reduced-motion: reduce) {
-  .tab .doodle, .tab::before, .tip, .tip.show, .tip::before { transition: none; }
-  .tab .doodle.hop { animation: none; }
 }
 
 .intro p { margin: 0 0 20px; }

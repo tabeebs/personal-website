@@ -1,5 +1,5 @@
 // The local preview server (npm start): serves the site's files, and the page itself for any other path, the way
-// Cloudflare Pages does when the site is live, so /experience opens the Experience view here too.
+// Cloudflare Pages does when the site is live.
 // Usage: node scripts/serve.js [port]   (5173 by default)
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
