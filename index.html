@@ -18,6 +18,8 @@
   </svg>
 
   <main id="content">
+    <!-- the hush: blurs everything behind it while "the web" is open (src/web.js) -->
+    <div class="hush" aria-hidden="true"></div>
     <div class="panel">
       <!-- Frosted glass tabs, top right of the panel (src/tabs.js). The selected tab sits under a clear lens you can
            click or drag between them; hovering a tab says where it goes. -->
@@ -38,13 +40,12 @@
             <h1 class="hi" data-meaning="māori: hello!">kia ora!</h1>
             <!-- clicking "shaf" copies my email address (src/contact.js) -->
             <p>i'm <span class="name" data-copy-email role="button" tabindex="0" aria-label="shaf: copy my email address">shaf</span>, a CS student @ UNSW.</p>
+            <!-- "the web" (src/web.js): hovering or focusing it hushes the rest of the page behind a blur and pops my
+                 profiles up above it; their sizes follow the pointer like a dock: the one under it swells, the others shrink back -->
+            <p>welcome to my little corner of <span class="web"><button class="web-btn" type="button" aria-expanded="false" aria-controls="socials"><span class="doodle" data-doodle="globe" data-size="19" data-hover=".web" data-quick aria-hidden="true"></span><span class="web-label">the web</span></button><span class="socials" id="socials" role="group" aria-label="Find me on"><a class="social" href="https://github.com/tabeebs" target="_blank" rel="noopener" aria-label="GitHub" data-tint="#dcd6f7"><span class="social-tip" aria-hidden="true">GitHub</span><span class="doodle" data-doodle="github" data-size="76" data-hover=".social" data-quick aria-hidden="true"></span></a><a class="social" href="https://www.linkedin.com/in/tabeebs/" target="_blank" rel="noopener" aria-label="LinkedIn" data-tint="#d3e2f7"><span class="social-tip" aria-hidden="true">LinkedIn</span><span class="doodle" data-doodle="linkedin" data-size="76" data-hover=".social" data-quick aria-hidden="true"></span></a></span></span>.</p>
           </section>
 
           <section class="collections" aria-label="Links">
-            <ul>
-              <li><a href="https://github.com/tabeebs" target="_blank" rel="noopener"><span class="doodle" data-doodle="github" aria-hidden="true"></span><span class="label">GitHub</span><span class="rule" aria-hidden="true"></span></a></li>
-              <li><a href="https://www.linkedin.com/in/tabeebs/" target="_blank" rel="noopener"><span class="doodle" data-doodle="linkedin" aria-hidden="true"></span><span class="label">LinkedIn</span><span class="rule" aria-hidden="true"></span></a></li>
-            </ul>
             <p class="cv piece">CV on request</p>
           </section>
         </section>
@@ -68,5 +69,6 @@
   <script type="module" src="/build/tabs.js"></script>
   <script type="module" src="/build/hello.js"></script>
   <script type="module" src="/build/contact.js"></script>
+  <script type="module" src="/build/web.js"></script>
 </body>
 </html>

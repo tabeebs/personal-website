@@ -380,8 +380,9 @@ async function main() {
     // the trail fades over about half a second, whatever the display's refresh rate
     const data = windTex.image.data, fade = Math.exp(-(realDt || .016) * 4.2);
     if (content) {
-      const sr = canvas.getBoundingClientRect(), inner = (content.firstElementChild || content).getBoundingClientRect();
-      const last = (content.lastElementChild || content).getBoundingClientRect();
+      // the card wraps the panel (not every child of the content: the full-screen hush behind "the web" lives there too)
+      const box = content.querySelector('.panel') || content.firstElementChild || content;
+      const sr = canvas.getBoundingClientRect(), inner = box.getBoundingClientRect(), last = inner;
       ascii.uniforms.uCard.value.set(inner.left - sr.left - CARD_PAD_X, inner.top - sr.top - CARD_PAD_TOP, inner.right - sr.left + CARD_PAD_X, last.bottom - sr.top + CARD_PAD_BOTTOM);
     }
     const now = performance.now() / 1000, rdt = realDt || .016;

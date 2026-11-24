@@ -1,4 +1,5 @@
-// Doodles: crayon renditions of the GitHub, email and LinkedIn icons beside each link, and of the house and
+// Doodles: crayon renditions of the email icon beside its link, the GitHub and LinkedIn icons that pop up out of
+// "the web" (src/web.js), the globe beside those words, and the house and
 // briefcase on the panel's tabs, in the same crayon language as the meadow. Fills are rows of short waxy
 // strokes over a pastel layer printed slightly out of register (letters and the Octocat are paper left bare),
 // the linework is navy crayon, and the whole drawing redraws a few times a second.
@@ -135,6 +136,31 @@ const DRAWINGS = {
     }
     return out;
   },
+  // "the web": a crayon globe beside the words. On hover it spins: the meridians sweep round and the continents
+  // slide across its face and round the back.
+  globe(t) {
+    const g = ease(t), now = performance.now(), out = [];
+    globeTurn += Math.min(250, now - spunAt) / 900 * g; spunAt = now;   // it keeps turning while alive, and stays where it stopped
+    const spin = globeTurn;
+    const R = 13.4, cx = 18, cy = 18;
+    out.push(fill(circle(cx, cy, R, 22), C.blue, C.blueP));
+    // continents: each sits at a longitude and shows only while it faces us
+    for (const [lon, lat, rx, ry] of [[-.5, -4.5, 6, 4.6], [.9, 5, 4.2, 5.4], [2.6, -2, 5.4, 4.4], [4.4, 3, 4.6, 5]]) {
+      const a = lon + spin, face = Math.cos(a);
+      if (face < .15) continue;
+      const x = cx + Math.sin(a) * (R - rx * .8), w = Math.max(1, rx * face);
+      out.push(fill(blob(x, cy + lat, w, ry, .3, 10), C.grass, C.grassP));
+    }
+    // meridians: two ellipses whose width follows the spin, plus the equator and two latitudes
+    for (const k of [0, Math.PI / 2]) {
+      const w = Math.abs(Math.sin(spin * .9 + k)) * R;
+      out.push(line(Array.from({ length: 15 }, (_, i) => [cx + Math.cos(i / 14 * Math.PI * 2) * w, cy + Math.sin(i / 14 * Math.PI * 2) * R]), C.navy, .8));
+    }
+    out.push(line([[cx - R, cy], [cx + R, cy]], C.navy, .8));
+    for (const y of [-7, 7]) { const h = Math.sqrt(R * R - y * y); out.push(line([[cx - h, cy + y], [cx + h, cy + y]], C.navy, .7)); }
+    out.push(line(circle(cx, cy, R, 22).concat([[cx + R, cy]]), C.navy, 1.2));
+    return out;
+  },
   // Experience: a briefcase. On hover a page peeks up out of it, the case hops, and the clasp catches the light.
   briefcase(t) {
     const g = ease(t), hop = -Math.sin(Math.PI * clamp01(t * 1.25)) * 1.6, out = [];
@@ -153,6 +179,7 @@ const DRAWINGS = {
   },
 };
 
+let globeTurn = .6, spunAt = 0;       // how far the globe has turned
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
 // each icon's own crayon, used for its leader line
 const INK = { github: C.navy, email: C.tomato, linkedin: C.blue };
@@ -176,13 +203,18 @@ function doodle(el) {
   const draw = DRAWINGS[el.dataset.doodle];
   if (!draw) return;
   const shown = +el.dataset.size || SHOWN;   // a doodle can ask to be drawn smaller (data-size, css px)
+  // A small doodle (like the globe inline with the text) keeps its crayon readable: its strokes and hatching grow
+  // with it shrinking, so they stay about as thick on screen, and it's drawn at twice the resolution and scaled down,
+  // so the fine strokes come out smooth rather than pixelated.
+  const coarse = Math.max(1, 30 / shown), ss = shown < 28 ? 2 : 1;
+  const hx = HX * coarse, hy = HY * coarse;
   const canvas = document.createElement('canvas');
   el.appendChild(canvas);
   const ctx = canvas.getContext('2d');
   let dpr = 1;
   const size = () => {
     dpr = Math.min(devicePixelRatio || 1, 3);
-    canvas.width = canvas.height = Math.round(shown * dpr);
+    canvas.width = canvas.height = Math.round(shown * dpr * ss);
   };
   size();
 
@@ -231,10 +263,12 @@ function doodle(el) {
   }
 
   let t = 0, target = 0, frame = 0, visible = true, timer = 0;
+  const quick = 'quick' in el.dataset;
+  let last = 0, boiledAt = 0;
 
   let paint = function () {
     const f = frame, j = (k, a = .35) => (hash(f, k, 31) - .5) * 2 * a;   // per-drawing jitter
-    const k = dpr * shown / SIZE;
+    const k = dpr * ss * shown / SIZE;
     ctx.setTransform(k, 0, 0, k, 0, 0);
     ctx.clearRect(0, 0, SIZE, SIZE);
     const items = draw(t);
@@ -259,15 +293,15 @@ function doodle(el) {
     items.forEach((it, n) => {
       if (it.kind !== 'fill') return;
       ctx.strokeStyle = PAL[it.ink];
-      ctx.lineWidth = .95;
+      ctx.lineWidth = .95 * coarse;
       ctx.beginPath();
-      for (let y = HY * .5; y < SIZE; y += HY) {
-        for (let x = HX * .5 + (Math.floor(y / HY) % 2) * HX * .5; x < SIZE; x += HX) {
+      for (let y = hy * .5; y < SIZE; y += hy) {
+        for (let x = hx * .5 + (Math.floor(y / hy) % 2) * hx * .5; x < SIZE; x += hx) {
           if (!insideShape(it, x, y)) continue;                     // letters and the cat stay bare paper
           if (fills.some((o) => o.n > n && insideShape(o, x, y))) continue;   // a shape drawn on top owns this spot
           const r = hash(Math.round(x * 10), Math.round(y * 10), f * 7 + n);
           if (r < .12) continue;                                  // paper showing through
-          const len = HY * (.45 + r * .55), dx = (hash(n, Math.round(x * 10), f) - .5) * .7, dy = (r - .5) * 1.2;
+          const len = hy * (.45 + r * .55), dx = (hash(n, Math.round(x * 10), f) - .5) * .7, dy = (r - .5) * 1.2;
           if (r > .86) { ctx.moveTo(x + dx, y + dy - len * .5); ctx.lineTo(x + dx, y + dy + len * .1); ctx.moveTo(x + dx, y + dy + len * .45); ctx.lineTo(x + dx, y + dy + len * .5); } // !
           else { ctx.moveTo(x + dx, y + dy - len * .5); ctx.lineTo(x + dx + (r - .5) * .5, y + dy + len * .5); }
         }
@@ -279,7 +313,7 @@ function doodle(el) {
       if (it.kind !== 'line') return;
       ctx.strokeStyle = PAL[it.ink];
       for (let pass = 0; pass < 2; pass++) {
-        ctx.lineWidth = it.w * (pass ? .55 : 1);
+        ctx.lineWidth = it.w * Math.sqrt(coarse) * (pass ? .55 : 1);
         ctx.globalAlpha = pass ? .55 : .95;
         ctx.beginPath();
         it.pts.forEach(([x, y], i) => { const px = x + j(n * 50 + i + pass * 9, .32), py = y + j(n * 50 + i + 30 + pass * 9, .32); i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); });
@@ -298,6 +332,18 @@ function doodle(el) {
     if (!visible) return;
     const alive = t > 0 || target > 0;
     if (reduced) { t = target; paint(); return; }
+    // A quick doodle (data-quick) answers the pointer straight away: it comes alive or settles over a few smooth
+    // frames (about 140ms), while its crayon still boils on twos.
+    if (quick) {
+      const now = performance.now(), step = Math.min(100, last ? now - last : 16) / 140;
+      t = target > t ? Math.min(1, t + step) : Math.max(0, t - step);
+      if (now - boiledAt >= BOIL_MS) { frame++; boiledAt = now; }
+      paint();
+      const moving = t !== target;
+      last = moving ? now : 0;
+      timer = setTimeout(tick, moving ? 16 : alive ? BOIL_MS : BOIL_MS * 3.2);
+      return;
+    }
     t = target > t ? Math.min(1, t + .22) : Math.max(0, t - (SETTLE[el.dataset.doodle] ?? .16));
     frame++;
     paint();
@@ -305,7 +351,7 @@ function doodle(el) {
   }
   const wake = () => { if (timer) clearTimeout(timer); tick(); };
 
-  const row = el.closest('li, button') || el;
+  const row = (el.dataset.hover ? el.closest(el.dataset.hover) : el.closest('li, button')) || el;   // what brings it alive
   const on = () => { target = 1; wake(); };
   const off = () => { target = 0; wake(); };
   row.addEventListener('pointerenter', on);
