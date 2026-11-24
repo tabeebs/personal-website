@@ -131,7 +131,9 @@ if (label) {
     const { delay, activeDuration } = a.effect.getComputedTiming();
     return new Promise((r) => setTimeout(r, (delay + activeDuration * .8 - (a.currentTime ?? 0)) / (a.playbackRate || 1)));
   }, () => {});
-  Promise.all([window.__swashed, document.fonts?.ready])
+  // and the opening's next line waits for the coil in turn (src/hello.js): this settles once it's 80% drawn in (its
+  // .8s in style.css), a beat later
+  window.__coiled = Promise.all([window.__swashed, document.fonts?.ready])
     .then(() => Promise.all(label.closest('p').getAnimations().map(landed)))
-    .then(() => setTimeout(draw, reduced ? 0 : 60));
+    .then(() => new Promise((r) => setTimeout(() => { draw(); setTimeout(r, reduced ? 0 : 800 * .8 + 60); }, reduced ? 0 : 60)));
 }

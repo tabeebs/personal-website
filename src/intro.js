@@ -24,7 +24,7 @@
     // (and if the swash never says it's done, the rest comes in anyway)
     setTimeout(next, 6000);
   };
-  // the swash under "shaf" has swept in (src/hello.js): then "welcome to my little corner of the web" rises, and the
+  // the swash under "shaf" and the coil under "the web" are in (src/hello.js): then any line after it rises, and the
   // CV note after it. Once they're in, drop the sequence's styles, so each piece is just itself again.
   let nexted = false;
   const next = () => {
