@@ -32,6 +32,16 @@ const roundRect = (x0, y0, x1, y1, r, n = 4) => {
   return pts;
 };
 const line = (pts, ink = C.navy, w = 1.5) => ({ kind: 'line', pts, ink, w });
+// a polyline swelled out to a band w wide, as a closed shape (the ends are cut square)
+const thick = (pts, w) => {
+  const L = [], R = [];
+  pts.forEach(([x, y], i) => {
+    const [ax, ay] = pts[Math.max(0, i - 1)], [bx, by] = pts[Math.min(pts.length - 1, i + 1)];
+    const m = Math.hypot(bx - ax, by - ay) || 1, nx = -(by - ay) / m * w / 2, ny = (bx - ax) / m * w / 2;
+    L.push([x + nx, y + ny]); R.push([x - nx, y - ny]);
+  });
+  return L.concat(R.reverse());
+};
 
 // Each drawing is a function of t, how alive it is (0 at rest, 1 hovered).
 const DRAWINGS = {
@@ -113,6 +123,24 @@ const DRAWINGS = {
     if (b > .02) out.push(fill(circle(29.2, 6.8, 4.4 * b, 12), C.tomato, C.tomatoP));
     return out;
   },
+  // LeetCode: a mustard disc (their orange), round like GitHub's so the pair frame LinkedIn's square, with the
+  // bracket mark left as bare paper: a "<" curling round at the foot, the short stroke above it and the bar beside
+  // it. On hover the bar slides out and fills in green, and an "Accepted" tick pops onto the rim.
+  leetcode(t) {
+    const g = ease(t);
+    const stroke = thick([[16.8, 11], [21, 7.6]], 2.8);
+    const arm = thick([[19.6, 11.8], [12.6, 18.2], [12, 19.8], [12.6, 21.4], [17, 25.8], [19.6, 26.8], [22.6, 26.4], [24.8, 24.6]], 3.4);
+    const bar = roundRect(18.4, 17.4, lerp(25.6, 27.8, backOut(g)), 21.2, 1.5, 2);
+    const disc = circle(18, 18, 14.2, 20);
+    const out = [fill(disc, C.mustard, C.mustardP, [stroke, arm, bar]), line(disc.concat([[18 + 14.2, 18]]), C.navy, 1.1)];
+    if (g > .4) out.push(fill(bar, C.grass, C.grassP), line(bar.concat([bar[0]]), C.navy, .8));
+    const b = backOut(clamp01((g - .3) / .7));
+    if (b > .02) {
+      out.push(fill(circle(28.4, 7.6, 4.6 * b, 12), C.grass, C.grassP));
+      if (b > .5) out.push(line([[26.5, 7.8], [27.9, 9.3], [30.4, 6]].map(([x, y]) => [28.4 + (x - 28.4) * b, 7.6 + (y - 7.6) * b]), C.navy, 1.1));
+    }
+    return out;
+  },
   // Home: a little house. On hover the door swings open, the window lights up, and smoke curls from the chimney.
   house(t) {
     const g = ease(t), out = [];
@@ -182,10 +210,10 @@ const DRAWINGS = {
 let globeTurn = .6, spunAt = 0;       // how far the globe has turned
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
 // each icon's own crayon, used for its leader line
-const INK = { github: C.navy, email: C.tomato, linkedin: C.blue };
+const INK = { github: C.navy, email: C.tomato, linkedin: C.blue, leetcode: C.mustard };
 // how fast a drawing settles back once the pointer leaves, per drawing (per tick); LinkedIn's dot and badge
 // tuck away quickly rather than hanging around
-const SETTLE = { linkedin: .34 };
+const SETTLE = { linkedin: .34, leetcode: .34 };
 const DOT = '#b4bcc6';                  // the leader's resting dots, a light grey like the sky's small dots
 const STEP = 8;                         // one dot per sky cell width
 const insideShape = (it, x, y) => inside(it.pts, x, y) && !it.holes.some((h) => inside(h, x, y));

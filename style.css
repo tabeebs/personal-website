@@ -195,24 +195,26 @@ html.playing, html.playing * { -webkit-user-select: none; user-select: none; }
 }
 .web-open .hush { opacity: 1; }
 
-/* the profiles, in a row above the words. They sit on a shared baseline, so a swelling icon grows upward and
-   nudges its neighbours aside. The row reaches right down to the words, so the pointer never falls in a gap. */
+/* the profiles, in a row centred above the words (src/web.js moves its centre off the globe, onto the words). They sit on a shared baseline, so a swelling icon grows upward
+   and nudges its neighbours aside. The row reaches right down to the words, so the pointer never falls in a gap. */
 .socials {
-  position: absolute; left: -6px; bottom: 100%;   /* anchored at the left, so the icons don't slide about as they resize */
+  position: absolute; left: 50%; bottom: 100%; transform: translateX(-50%);
   display: flex; align-items: flex-end; gap: 4px; padding: 0 6px 8px;
   visibility: hidden; pointer-events: none; transition: visibility 0s .2s;
 }
 .web-open .socials { visibility: visible; pointer-events: auto; transition: none; }
+/* they fan out from the middle: each one waits tucked in at the centre of the row, small and low (--from, set in
+   src/web.js, is how far it sits from the centre), and springs out to its place, the middle one first */
 .social {
-  --s: 1; --i: 0;
+  --s: 1; --i: 0; --from: 0px;
   position: relative; display: block; width: calc(48px * var(--s)); height: calc(48px * var(--s)); border-radius: 10px;
-  opacity: 0; transform: translateY(14px) scale(.3); transform-origin: 50% 100%;
+  opacity: 0; transform: translate(var(--from), 16px) scale(.2); transform-origin: 50% 100%;
   transition: opacity .12s, transform .18s ease-in;
 }
 /* (their size is eased frame by frame in src/web.js, so width and height have no transition here) */
 .web-open .social {
   opacity: 1; transform: none;
-  transition: opacity .12s calc(var(--i) * 35ms), transform .34s calc(var(--i) * 35ms) cubic-bezier(.3, 1.55, .5, 1);
+  transition: opacity .14s calc(var(--i) * 40ms), transform .42s calc(var(--i) * 40ms) cubic-bezier(.3, 1.55, .5, 1);
 }
 .social:focus-visible { outline: 2px solid #2d3a68; outline-offset: 1px; }
 .social .doodle { display: block; width: 100%; height: 100%; margin: 0; transform: none; }

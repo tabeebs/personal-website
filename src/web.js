@@ -1,5 +1,5 @@
 // "the web": hovering (or focusing, or tapping) the words opens them. The rest of the page goes quiet behind a
-// blur, and my profiles pop up out of the words, one after another. Like a dock, their sizes follow the pointer
+// blur, and my profiles pop up out of the words, from the middle outwards. Like a dock, their sizes follow the pointer
 // as it moves: the one under it swells and says its name, and the others shrink back.
 // Source for build/web.js: rebuild with `npm run build` after editing.
 
@@ -10,14 +10,26 @@ if (web) {
   const icons = [...row.querySelectorAll('.social')];
   const root = document.documentElement;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  icons.forEach((a, i) => { a.style.setProperty('--i', i); a.style.setProperty('--tint', a.dataset.tint); });
+  // they fan out from the middle: each starts tucked in at the centre of the row (--from) and springs out to its
+  // place, the middle one first, then each pair either side of it together
+  const mid = (icons.length - 1) / 2;
+  icons.forEach((a, i) => {
+    a.style.setProperty('--i', Math.abs(i - mid));
+    a.style.setProperty('--from', `${(mid - i) * 52}px`);   // one resting icon plus the gap, per step from the middle
+    a.style.setProperty('--tint', a.dataset.tint);
+  });
 
   let open = false, closer = 0, openedAt = 0;
   const set = (on) => {
     clearTimeout(closer);
     if (on === open) return;
     open = on;
-    if (on) openedAt = performance.now();
+    if (on) {
+      openedAt = performance.now();
+      // the row is centred over the words alone, not the globe beside them
+      const words = web.querySelector('.web-label');
+      row.style.left = `${words.offsetLeft + words.offsetWidth / 2}px`;
+    }
     root.classList.toggle('web-open', on);
     btn.setAttribute('aria-expanded', on);
     if (!on) swell(null);
