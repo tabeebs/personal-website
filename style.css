@@ -245,26 +245,28 @@ html.intro-go[data-intro] :is(.panel, .intro .hi ~ p, .cv, #ground) { animation-
 .intro-go[data-intro] #ground { animation: intro-surface 1.2s 1.1s cubic-bezier(.25, .8, .3, 1); }
 
 /* "UNSW" in the uni's own wordmark (cut from the logo on unsw.edu.au, 217 x 58; at 11.5px tall its caps match the
-   sentence's). Hovering opens a slot in front of it, from nothing to the crest's width plus a gap either side, which
-   shoves the word (and the full stop) right, and the crest blooms into it out of a blur with a small settle; leaving
-   runs it backwards a little quicker, so the crest blurs away and the word slides back. After mobbin.com's hero. */
-.intro a.unsw { display: inline-flex; align-items: center; white-space: nowrap; text-decoration: none; outline: none; }
+   sentence's). Hovering opens a slot in front of it, from nothing to the shield's width plus a gap either side,
+   easing the word (and the full stop) right as the shield fades up into it out of a soft blur; leaving eases it all
+   back. The shield (the crest without its motto scroll, 59 x 64) sits on the baseline at the wordmark's height,
+   so nothing grows taller than the letters. After mobbin.com's hero. */
+.intro a.unsw { display: inline-flex; align-items: baseline; white-space: nowrap; text-decoration: none; outline: none; }
 a.unsw:focus-visible { outline: 2px solid #2d3a68; outline-offset: 3px; border-radius: 3px; }
 .unsw img { display: block; user-select: none; -webkit-user-drag: none; }
-.unsw-mark { align-self: baseline; height: 11.5px; width: auto; margin: 0 1px; transform: translateY(.5px); }   /* the line's baseline comes from the word, not the empty slot */
+.unsw-mark { height: 11.5px; width: auto; margin: 0 1px; transform: translateY(.5px); }
 .unsw-slot {
-  --crest-h: 17px; --crest-w: calc(var(--crest-h) * 88 / 138); --gap: 3px;
-  position: relative; align-self: stretch; width: 0;
-  transition: width .22s cubic-bezier(.5, 0, .2, 1) .06s;
+  --h: 11.5px; --w: calc(var(--h) * 59 / 64); --gap: 3px;
+  position: relative; display: block; height: var(--h); width: 0; transform: translateY(.5px);
+  transition: width .42s cubic-bezier(.65, 0, .35, 1) .04s;   /* closing: waits a beat for the shield to start going */
 }
 .unsw-slot img {
-  position: absolute; left: 50%; top: 50%; height: var(--crest-h); width: auto;
-  opacity: 0; filter: blur(5px); transform: translate(-50%, -50%) scale(.72);
-  transition: opacity .16s ease-in, filter .16s ease-in, transform .16s ease-in;
+  position: absolute; left: 50%; bottom: 0; height: var(--h); width: auto;
+  opacity: 0; filter: blur(2px); transform: translateX(-50%) scale(.6); transform-origin: 50% 70%;
+  transition: opacity .24s ease, filter .3s ease, transform .36s cubic-bezier(.65, 0, .35, 1);
+  will-change: opacity, transform, filter;
 }
-a.unsw:is(:hover, :focus-visible) .unsw-slot { width: calc(var(--crest-w) + 2 * var(--gap)); transition: width .26s cubic-bezier(.16, 1, .3, 1); }
+a.unsw:is(:hover, :focus-visible) .unsw-slot { width: calc(var(--w) + 2 * var(--gap)); transition: width .5s cubic-bezier(.22, 1, .36, 1); }
 a.unsw:is(:hover, :focus-visible) .unsw-slot img {
-  opacity: 1; filter: blur(0); transform: translate(-50%, -50%) scale(1);
-  transition: opacity .2s ease-out .09s, filter .3s ease-out .09s, transform .44s cubic-bezier(.3, 1.45, .5, 1) .09s;
+  opacity: 1; filter: blur(0); transform: translateX(-50%) scale(1);
+  transition: opacity .38s ease .06s, filter .45s ease .06s, transform .55s cubic-bezier(.22, 1, .36, 1) .06s;
 }
 @media (prefers-reduced-motion: reduce) { .unsw-slot, .unsw-slot img { transition: none; } }
