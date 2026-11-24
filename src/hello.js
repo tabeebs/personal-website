@@ -119,18 +119,21 @@ function swash(el) {
   }
   const wake = () => { if (timer) clearTimeout(timer); tick(); };
   function sweep(delay = 0) {
-    if (calm.matches) { reveal = 1; paint(); return; }
+    if (calm.matches) { reveal = 1; paint(); return Promise.resolve(); }
     reveal = 0; paint();
     const run = ++sweeping, t0 = performance.now() + delay;
-    const step = (now) => {
-      if (run !== sweeping) return;
-      const k = Math.min(1, Math.max(0, (now - t0) / 520));
-      reveal = 1 - (1 - k) ** 3;
-      paint();
-      if (k < 1) requestAnimationFrame(step); else sweeping = 0;
-    };
-    requestAnimationFrame(step);
-    wake();
+    // (it settles once the swash is all there, or once a newer sweep takes over)
+    return new Promise((done) => {
+      const step = (now) => {
+        if (run !== sweeping) { done(); return; }
+        const k = Math.min(1, Math.max(0, (now - t0) / 520));
+        reveal = 1 - (1 - k) ** 3;
+        paint();
+        if (k < 1) requestAnimationFrame(step); else { sweeping = 0; done(); }
+      };
+      requestAnimationFrame(step);
+      wake();
+    });
   }
   el.addEventListener('pointerenter', () => { alive = true; wake(); });
   el.addEventListener('pointerleave', () => { alive = false; wake(); });
@@ -144,12 +147,14 @@ function swash(el) {
 
 // ---- wiring ----
 const DROP = 640;   // how long each letter takes to drop in and settle, ms
+// the page's opening swashes, all swept in: the underline under "the web" waits for this (src/web.js)
+const opening = [];
 for (const view of document.querySelectorAll('.view')) {
   const letters = [...view.querySelectorAll('.hi')].flatMap(lettered);
   const names = [...view.querySelectorAll('.name')].map(swash);
   // opening the page: the letters drop in and bounce, then the swash sweeps in under the name
   // (with an opening sequence, src/intro.js, they wait for their turn in it)
-  if (!view.hidden && !calm.matches) (window.__intro?.letters || Promise.resolve()).then(() => {
+  if (!view.hidden && !calm.matches) opening.push((window.__intro?.letters || Promise.resolve()).then(() => {
     letters.forEach((l, i) => l.animate([
       { opacity: 0, transform: 'translateY(-16px) scale(.7, 1.2)' },
       { opacity: 1, transform: 'translateY(2px) scale(1.12, .86)', offset: .55 },
@@ -157,8 +162,8 @@ for (const view of document.querySelectorAll('.view')) {
       { transform: 'none' },
     ], { duration: DROP, delay: 180 + i * 48, easing: 'cubic-bezier(.3, .7, .4, 1)', fill: 'backwards' }));
     // a tenth of a second after the last letter has landed
-    names.forEach((n) => n.sweep(180 + Math.max(0, letters.length - 1) * 48 + DROP + 100));
-  });
+    return Promise.all(names.map((n) => n.sweep(180 + Math.max(0, letters.length - 1) * 48 + DROP + 100)));
+  }));
   // coming back to a view: a wave through its heading, and the swash sweeps in again
   new MutationObserver(() => {
     if (view.hidden) return;
@@ -166,3 +171,4 @@ for (const view of document.querySelectorAll('.view')) {
     names.forEach((n) => n.sweep(420));
   }).observe(view, { attributes: true, attributeFilter: ['hidden'] });
 }
+window.__swashed = Promise.all(opening);

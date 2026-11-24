@@ -172,8 +172,20 @@ html.playing, html.playing * { -webkit-user-select: none; user-select: none; }
 /* (it isn't tilted or scaled on hover, which would resample it and soften the crayon; it spins instead) */
 .web-btn .doodle { display: inline-block; width: 19px; height: 19px; margin: 0 4px 0 0; vertical-align: -5px; transition: none; }
 .web-btn .doodle canvas { width: 19px; height: 19px; }
-.web-label { text-decoration: underline; text-decoration-color: #b4bcc6; text-decoration-thickness: 1.5px; text-underline-offset: 4px; transition: text-decoration-color .12s; }
-.web-open .web-label { text-decoration-color: #2d3a68; }
+/* the words are underlined by hand (src/web.js draws it): a little coil, like a phone cord. The light coil draws
+   in after the swash under "shaf" and stays; opening "the web" traces a dark coil over it along the same path, and
+   closing rubs the dark one gently back out. */
+.web-label { position: relative; }
+.web-ink { position: absolute; left: -2px; top: calc(100% - 2px); overflow: visible; pointer-events: none; }
+/* traced along its length; the dash waits just off the path, so its round caps leave no dot */
+.web-ink .tr { fill: none; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round;
+  stroke-dasharray: 1 2; stroke-dashoffset: 1.05; }
+.web-ink .base { stroke: #8fb0dc; transition: stroke-dashoffset .8s cubic-bezier(.55, .1, .35, 1); }
+/* the dark coil: rubbed out unhurriedly, easing in and out, and traced on quickly, answering the pointer at once */
+.web-ink .over { stroke: #2d3a68; transition: stroke-dashoffset .7s cubic-bezier(.45, 0, .2, 1); }
+.web-open .web-ink .over { transition: stroke-dashoffset .5s cubic-bezier(.25, .6, .3, 1); }
+.web-ink.shown .base, .web-open .web-ink .over { stroke-dashoffset: 0; }
+@media (prefers-reduced-motion: reduce) { .web-ink .tr { transition: none; } }
 
 /* the hush: a frosted veil over the whole page, under "the web" */
 .hush {
