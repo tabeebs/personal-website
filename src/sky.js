@@ -83,7 +83,7 @@ const CARD_PAD_X = 64, CARD_PAD_TOP = 28, CARD_PAD_BOTTOM = 34;   // the soft wh
 const palGlsl = `const vec3 PAL[${PAL.length}] = vec3[${PAL.length}](${PAL.map((h) => `vec3(${[1, 3, 5].map((i) => (parseInt(h.slice(i, i + 2), 16) / 255).toFixed(4)).join(',')})`).join(',')});`;
 const asciiFrag = /* glsl */`
 precision highp float;
-uniform sampler2D uScene, uAtlas, uWind; uniform vec2 uView, uCell, uGrid; uniform float uTime, uN; uniform vec4 uCard;
+uniform sampler2D uScene, uAtlas, uWind; uniform vec2 uView, uCell, uGrid; uniform float uTime, uN; uniform vec4 uCard, uIntro;
 in vec2 vUv; out vec4 outColor;
 float h21(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
 float vn(vec2 p){ vec2 i=floor(p),f=fract(p); f=f*f*(3.-2.*f); return mix(mix(h21(i),h21(i+vec2(1,0)),f.x),mix(h21(i+vec2(0,1)),h21(i+vec2(1,1)),f.x),f.y); }
@@ -198,6 +198,23 @@ void main(){
     c = mix(c, PAL[12], glyph(floor(wn.a*255.+.5), gv, gdx, gdy)*k*behind);
   }
 
+  // the opening sequence (src/intro.js): x is on, y the seconds since it began, zw the greeting's middle.
+  // The page starts inside a cloud that parts from the greeting outward, its edge billowing.
+  if(uIntro.x > .5){
+    float t = uIntro.y;
+    vec2 d = (px - uIntro.zw)/uView.x;
+    float bill = (fbm(vec2(atan(d.y, d.x)*2.2, t*.5)) - .5)*.22 + (fbm(cell*.09 + t*.3) - .5)*.08;
+    float open = pow(smoothstep(.1, 2.3, t), .8)*1.15;
+    float fog = smoothstep(open - .1, open + .02, length(d*vec2(1., 1.5)) + bill);
+    vec3 fc = mix(CLOUD, SHADE, smoothstep(.45, .8, fbm(cell*vec2(.05, .08) + vec2(t*.15, 0.)))*.7);
+    // a ring of the cloud's outline glyphs where it meets the open sky
+    float ring = smoothstep(.0, .5, fog)*smoothstep(1., .5, fog);
+    float gl2 = h < .4 ? ${gg('~')} : h < .7 ? ${gg('(')} : h < .85 ? ${gg(')')} : ${gg(':')};
+    fc = mix(fc, OUTLINE, glyph(gl2, gv, gdx, gdy)*ring*.9);
+    fc = mix(fc, vec3(1.), max(step(uCell.x-1., cp.x), step(uCell.y-1., cp.y))*.8);
+    c = mix(c, fc, fog);
+  }
+
   outColor = vec4(c,1.);
 }`;
 
@@ -225,11 +242,17 @@ async function main() {
   const clouds = buildClouds(scene);
 
   const camera = new THREE.PerspectiveCamera(30, 1, 1, 1500);
-  let pitch = 0;
+  let pitch = 0, baseFov = 30, introFov = false;
+  const intro = window.__intro || { on: false };
+  const introT = () => (intro.on && intro.t0 ? performance.now() / 1000 - intro.t0 : 0);
+  const settle3 = (k) => 1 - Math.pow(1 - clamp(k), 3);
   function placeCamera(t) {
     const k = .5 - .5 * Math.cos(Math.PI * t / 60), yaw = THREE.MathUtils.degToRad(-2.5 + 5 * k);
     camera.position.set(0, 0, 0);
     camera.rotation.set(pitch, yaw, 0, 'YXZ'); camera.updateMatrixWorld();
+    // the opening: the view pulls back out of the cloud
+    if (intro.on) { camera.fov = baseFov * (1 - .3 * (1 - settle3(introT() / 3))); camera.updateProjectionMatrix(); introFov = true; }
+    else if (introFov) { camera.fov = baseFov; camera.updateProjectionMatrix(); introFov = false; }
   }
 
   const rt = new THREE.WebGLRenderTarget(4, 4, { type: THREE.HalfFloatType, generateMipmaps: true, minFilter: THREE.LinearMipmapLinearFilter, magFilter: THREE.LinearFilter });
@@ -237,7 +260,7 @@ async function main() {
   const vtx = `in vec3 position; in vec2 uv; out vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy,0.,1.); }`;
   const ascii = new THREE.RawShaderMaterial({ glslVersion: THREE.GLSL3, vertexShader: vtx, fragmentShader: asciiFrag, depthTest: false, depthWrite: false,
     uniforms: { uScene: { value: rt.texture }, uAtlas: { value: buildAtlas() }, uWind: { value: windTex }, uView: { value: new THREE.Vector2(1, 1) },
-      uCell: { value: new THREE.Vector2(CW, CH) }, uGrid: { value: new THREE.Vector2(1, 1) }, uTime: time, uN: { value: GLYPHS.length }, uCard: { value: new THREE.Vector4(0, -10000, 0, 0) } } });
+      uCell: { value: new THREE.Vector2(CW, CH) }, uGrid: { value: new THREE.Vector2(1, 1) }, uTime: time, uN: { value: GLYPHS.length }, uCard: { value: new THREE.Vector4(0, -10000, 0, 0) }, uIntro: { value: new THREE.Vector4(0, 0, 0, 0) } } });
   const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), ascii); quad.frustumCulled = false;
   const post = new THREE.Scene(); post.add(quad); const postCam = new THREE.Camera();
 
@@ -273,7 +296,7 @@ async function main() {
     const S = (COARSE ? 2.6 : 3.2) * Math.sqrt(qScale);
     rt.setSize(Math.round(c * S), Math.round(r * S * CH / CW));
     const hfov = THREE.MathUtils.degToRad(74), vfov = clamp(2 * Math.atan(Math.tan(hfov / 2) / aspect), THREE.MathUtils.degToRad(22), THREE.MathUtils.degToRad(64));
-    camera.aspect = aspect; camera.fov = THREE.MathUtils.radToDeg(vfov); camera.updateProjectionMatrix();
+    camera.aspect = aspect; camera.fov = baseFov = THREE.MathUtils.radToDeg(vfov); camera.updateProjectionMatrix();
     pitch = vfov / 2 + THREE.MathUtils.degToRad(1.5);
   }
   resize();
@@ -384,6 +407,10 @@ async function main() {
       const box = content.querySelector('.panel') || content.firstElementChild || content;
       const sr = canvas.getBoundingClientRect(), inner = box.getBoundingClientRect(), last = inner;
       ascii.uniforms.uCard.value.set(inner.left - sr.left - CARD_PAD_X, inner.top - sr.top - CARD_PAD_TOP, inner.right - sr.left + CARD_PAD_X, last.bottom - sr.top + CARD_PAD_BOTTOM);
+      if (intro.on) {
+        const hi = content.querySelector('.view:not([hidden]) .hi')?.getBoundingClientRect() || inner;
+        ascii.uniforms.uIntro.value.set(1, introT(), (hi.left + hi.right) / 2 - sr.left, (hi.top + hi.bottom) / 2 - sr.top);
+      } else ascii.uniforms.uIntro.value.x = 0;
     }
     const now = performance.now() / 1000, rdt = realDt || .016;
     if (press.down) { press.acc += rdt * 26; while (press.acc >= 1) { press.acc -= 1; rain.drop(press.x + (Math.random() * 2 - 1) * 26, press.y + Math.random() * 10, now); } }
@@ -424,6 +451,7 @@ async function main() {
     const dt = (now - last) / 1000; last = now;
     if (!still) clock += Math.min(.1, dt);
     drawFrame(clock, Math.min(.1, dt));
+    if (!frames) intro.skyReady?.();   // the first frame is drawn: the opening sequence can begin
     if (++frames > 30 && !decided && !still && dt < .25) {
       tSum += dt; tN++;
       if (tN === 90) { decided = true; const avg = tSum / tN; if (avg > .022) { qScale = avg > .04 ? .45 : .7; resize(); } }

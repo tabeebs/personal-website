@@ -68,7 +68,7 @@ function swash(el) {
   cv.setAttribute('aria-hidden', 'true');
   el.prepend(cv);
   const ctx = cv.getContext('2d');
-  let w = 0, h = 0, dpr = 1, reveal = 1, frame = Math.floor(Math.random() * 99), alive = false, visible = true, timer = 0, sweeping = 0;
+  let w = 0, h = 0, dpr = 1, reveal = window.__intro?.on ? 0 : 1, frame = Math.floor(Math.random() * 99), alive = false, visible = true, timer = 0, sweeping = 0;
   const size = () => {
     dpr = Math.min(devicePixelRatio || 1, 3);
     w = cv.offsetWidth; h = cv.offsetHeight;
@@ -148,7 +148,8 @@ for (const view of document.querySelectorAll('.view')) {
   const letters = [...view.querySelectorAll('.hi')].flatMap(lettered);
   const names = [...view.querySelectorAll('.name')].map(swash);
   // opening the page: the letters drop in and bounce, then the swash sweeps in under the name
-  if (!view.hidden && !calm.matches) {
+  // (with an opening sequence, src/intro.js, they wait for their turn in it)
+  if (!view.hidden && !calm.matches) (window.__intro?.letters || Promise.resolve()).then(() => {
     letters.forEach((l, i) => l.animate([
       { opacity: 0, transform: 'translateY(-16px) scale(.7, 1.2)' },
       { opacity: 1, transform: 'translateY(2px) scale(1.12, .86)', offset: .55 },
@@ -157,7 +158,7 @@ for (const view of document.querySelectorAll('.view')) {
     ], { duration: DROP, delay: 180 + i * 48, easing: 'cubic-bezier(.3, .7, .4, 1)', fill: 'backwards' }));
     // a tenth of a second after the last letter has landed
     names.forEach((n) => n.sweep(180 + Math.max(0, letters.length - 1) * 48 + DROP + 100));
-  }
+  });
   // coming back to a view: a wave through its heading, and the swash sweeps in again
   new MutationObserver(() => {
     if (view.hidden) return;
