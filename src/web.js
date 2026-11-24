@@ -83,7 +83,7 @@ if (web) {
 }
 
 // The underline, drawn by hand: a run of little loops, like a phone cord, kept within the words. The light coil
-// is drawn in once the swash under "shaf" has finished (src/hello.js says when) and this line has risen into
+// is drawn in once the swash under "shaf" has swept in (src/hello.js says when) and this line has risen into
 // place, and then stays. Opening "the
 // web" traces a dark coil over it, along the same path; closing it rubs the dark one gently back out, leaving the
 // light one as it was.
@@ -113,8 +113,13 @@ if (label) {
     svg.getBoundingClientRect();   // so the light coil draws in, rather than just appearing
     svg.classList.add('shown');
   };
-  // it waits for the font too, so it fits the words, and for its own line to finish rising into place (src/intro.js)
+  // it waits for the font too, so it fits the words, and for its own line to rise into place (src/intro.js): like
+  // each step of the opening (src/hello.js), it starts a beat after that has landed, once it's 80% through
+  const landed = (a) => a.ready.then(() => {
+    const { delay, activeDuration } = a.effect.getComputedTiming();
+    return new Promise((r) => setTimeout(r, (delay + activeDuration * .8 - (a.currentTime ?? 0)) / (a.playbackRate || 1)));
+  }, () => {});
   Promise.all([window.__swashed, document.fonts?.ready])
-    .then(() => Promise.all(label.closest('p').getAnimations().map((a) => a.finished.catch(() => {}))))
-    .then(() => setTimeout(draw, reduced ? 0 : 120));
+    .then(() => Promise.all(label.closest('p').getAnimations().map(landed)))
+    .then(() => setTimeout(draw, reduced ? 0 : 60));
 }
