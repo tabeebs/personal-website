@@ -81,3 +81,40 @@ if (web) {
     a.addEventListener('blur', () => swell(null));
   });
 }
+
+// The underline, drawn by hand: a run of little loops, like a phone cord, kept within the words. The light coil
+// is drawn in once the swash under "shaf" has finished (src/hello.js says when) and this line has risen into
+// place, and then stays. Opening "the
+// web" traces a dark coil over it, along the same path; closing it rubs the dark one gently back out, leaving the
+// light one as it was.
+const label = document.querySelector('.web-label');
+if (label) {
+  const NS = 'http://www.w3.org/2000/svg';
+  const H = 14;   // the drawing's height (it hangs just under the words)
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const f = (n) => n.toFixed(2);
+  const el = (tag, attrs) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; };
+
+  // a stretched cycloid: it loops because it swings round wider than it moves along
+  const coil = (w) => {
+    const A = .72, B = 2.1, y = 4.6, T = (w - 1) / A, pts = [];
+    for (let t = 0; t <= T; t += .22) pts.push(`${f(A * t - B * Math.sin(t) + .5)} ${f(y - B * .85 * Math.cos(t))}`);
+    return `M${pts.join(' L')}`;
+  };
+
+  let svg = null;
+  const draw = () => {
+    const w = label.offsetWidth, d = coil(w);
+    svg = el('svg', { class: 'web-ink', 'aria-hidden': 'true', width: w + 4, height: H, viewBox: `-2 0 ${w + 4} ${H}` });
+    // the light coil, then the dark one over it: the very same path
+    for (const layer of ['base', 'over']) svg.append(el('path', { class: `tr ${layer}`, d, pathLength: 1 }));
+    label.append(svg);
+    if (reduced) { svg.classList.add('shown'); return; }
+    svg.getBoundingClientRect();   // so the light coil draws in, rather than just appearing
+    svg.classList.add('shown');
+  };
+  // it waits for the font too, so it fits the words, and for its own line to finish rising into place (src/intro.js)
+  Promise.all([window.__swashed, document.fonts?.ready])
+    .then(() => Promise.all(label.closest('p').getAnimations().map((a) => a.finished.catch(() => {}))))
+    .then(() => setTimeout(draw, reduced ? 0 : 120));
+}
