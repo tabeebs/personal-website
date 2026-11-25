@@ -15,7 +15,7 @@ if (web) {
   const mid = (icons.length - 1) / 2;
   icons.forEach((a, i) => {
     a.style.setProperty('--i', Math.abs(i - mid));
-    a.style.setProperty('--from', `${(mid - i) * 52}px`);   // one resting icon plus the gap, per step from the middle
+    a.style.setProperty('--from', `${(mid - i) * 58}px`);   // one resting icon plus the gap, per step from the middle
     a.style.setProperty('--tint', a.dataset.tint);
   });
 
@@ -61,7 +61,7 @@ if (web) {
   // within one icon shift the sizes. Right under the pointer an icon swells; further off it shrinks below its
   // resting size, so the one you're on stands out and the others step back. Sizes are eased every frame towards
   // those targets, so it stays quick and smooth.
-  const BIG = 1.4, SMALL = .8, SIGMA = 30;   // largest and smallest size (x the resting 48px), and the falloff, px
+  const BIG = 1.4, SMALL = .8, SIGMA = 30;   // largest and smallest size (x the resting 54px), and the falloff, px
   const cur = icons.map(() => 1);
   let px = null, raf = 0, then = 0;
   const goal = (a) => {
@@ -116,8 +116,9 @@ if (label) {
 
   let svg = null;
   const draw = () => {
-    const w = label.offsetWidth, d = coil(w);
-    svg = el('svg', { class: 'web-ink', 'aria-hidden': 'true', width: w + 4, height: H, viewBox: `-2 0 ${w + 4} ${H}` });
+    // drawn for 16px text, and scaled with the words' size, so its loops (and stroke) grow with them
+    const k = parseFloat(getComputedStyle(label).fontSize) / 16, w = label.offsetWidth / k, d = coil(w);
+    svg = el('svg', { class: 'web-ink', 'aria-hidden': 'true', width: (w + 4) * k, height: H * k, viewBox: `-2 0 ${w + 4} ${H}` });
     // the light coil, then the dark one over it: the very same path
     for (const layer of ['base', 'over']) svg.append(el('path', { class: `tr ${layer}`, d, pathLength: 1 }));
     label.append(svg);
