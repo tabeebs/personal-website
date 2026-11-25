@@ -23,8 +23,7 @@ html, body {
 :root {
   --ground: clamp(156px, 24vh, 260px);    /* height of the ground band */
 }
-/* the card is centred on the screen: the content sits in the middle of the page, with as much room above it as
-   below (where it keeps clear of the ground) */
+/* the card is centred in the screen above the grass (see #content's padding), keeping clear of the ground */
 body {
   position: relative;
   min-height: 100vh;
@@ -49,9 +48,10 @@ body {
   width: 100%;
   max-width: 628px;
   margin: 0 auto;
-  /* the ground's top rows are open air; the top is 6px shorter because the sky's card reaches 6px further below
-     the panel than above it (src/sky.js), so the card itself is what's centred */
-  padding: calc(var(--ground) - 30px) 16px calc(var(--ground) - 24px);
+  /* the ground's top rows are open air. The card is centred in the screen above the grass, not the whole screen:
+     the grass row sits 72px up from the bottom (6 rows of 12px, src/ground.js), so the top is 72px shorter, and 6px
+     more because the sky's card reaches 6px further below the panel than above it (src/sky.js) */
+  padding: calc(var(--ground) - 102px) 16px calc(var(--ground) - 24px);
 }
 
 /* The ground (src/ground.js): pale green tiles with the crayon meadow growing on top. It is see-through
