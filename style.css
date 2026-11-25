@@ -295,12 +295,15 @@ a.unsw:focus-visible { outline: 2px solid #2d3a68; outline-offset: 3px; border-r
 .peek-open .hush { opacity: 1; }
 .peek-open .web { z-index: 4; }   /* "the web" goes quiet behind the hush with everything else */
 .peek {
-  --nudge: 0px;
+  --nudge: 0px; --dx: 0px; --tilt: 0deg;
   position: absolute; left: 50%; bottom: calc(100% + 12px); z-index: 7;
   width: 280px; height: 178px; padding: 4px; border-radius: 14px; background: #fff;
   box-shadow: 0 0 0 .5px rgba(45, 58, 104, .16), 0 18px 40px -14px rgba(45, 58, 104, .45), 0 4px 10px -4px rgba(45, 58, 104, .2);
   pointer-events: none; visibility: hidden; opacity: 0;
   transform: translateX(calc(-50% + var(--nudge))) translateY(8px) scale(.9); transform-origin: 50% 100%;
+  /* the drift (src/peek.js eases it every frame, so it has no transition of its own): sliding after the pointer and
+     leaning towards it from the window's foot */
+  translate: var(--dx) 0; rotate: var(--tilt);
   transition: opacity .12s, transform .16s ease-in, visibility 0s .16s;
 }
 .peek canvas { display: block; width: 272px; height: 170px; border-radius: 10px; background: #f3f3f3; }

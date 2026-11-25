@@ -39,7 +39,7 @@ if (link) {
   function makePlan(max) {
     // a list of [from, to, duration, then hold] moves, ending back at the top
     const steps = []; let y = 0;
-    let hold = 900;
+    let hold = 400;   // a short look at the top before it starts scrolling
     while (y < max) {
       const to = Math.min(max, y + 260 + Math.random() * 220);
       steps.push({ from: y, to, dur: 700 + (to - y) * 1.1, hold });
@@ -74,7 +74,7 @@ if (link) {
   // right behind it, the strokes boiling (redrawn a little differently) eight times a second, like the meadow
   const mask = document.createElement('canvas'), mg = mask.getContext('2d');
   mask.width = W; mask.height = H;
-  const CRAYON_MS = 720, COL = 7 * dpr;
+  const CRAYON_MS = 650, COL = 7 * dpr;
   const rnd = (a, b, c) => { let h = Math.imul(a, 374761393) ^ Math.imul(b, 668265263) ^ Math.imul(c, 2147483647);
     h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
   function strokes(ctx, p, lag, boil, color) {
@@ -113,11 +113,28 @@ if (link) {
     return false;
   }
 
+  // ---- drift: the window follows the pointer along the logo, sliding a little way left or right and leaning
+  // towards it from its foot, eased so it trails the pointer softly ----
+  const FOLLOW = .9, LEAN = 2.2;   // px moved per px of pointer, and degrees of lean at the logo's ends
+  let aim = 0, drift = 0, lastAt = 0;
+  function aimAt(x) {
+    const r = link.getBoundingClientRect(), half = r.width / 2 || 1;
+    aim = Math.max(-1, Math.min(1, (x - (r.left + half)) / half)) * half;   // px from the logo's middle, kept within it
+  }
+  function sway(now) {
+    const k = lastAt ? 1 - Math.exp(-(now - lastAt) / 90) : 1; lastAt = now;
+    drift += (aim - drift) * k;
+    const half = link.getBoundingClientRect().width / 2 || 1;
+    card.style.setProperty('--dx', `${(drift * FOLLOW).toFixed(2)}px`);
+    card.style.setProperty('--tilt', `${(drift / half * LEAN).toFixed(3)}deg`);
+  }
+
   // ---- opening and closing ----
   let open = false, raf = 0, openedAt = 0, revealed = false, closer = 0;
   function frame(now) {
     raf = 0;
     if (!open) return;
+    if (!reduced) sway(now);
     if (!ready) { g.fillStyle = '#f3f3f3'; g.fillRect(0, 0, W, H); raf = requestAnimationFrame(frame); return; }
     if (!openedAt) { openedAt = now; planAt = now; plan = []; }
     const t = now - openedAt;
@@ -145,15 +162,18 @@ if (link) {
     if (on) {
       load();
       openedAt = 0; revealed = false;
+      drift = aim; lastAt = 0;   // it opens where the pointer already is, rather than sliding over from the middle
+      card.style.setProperty('--dx', '0px'); card.style.setProperty('--tilt', '0deg');
       place();
       if (!raf) raf = requestAnimationFrame(frame);
     }
     root.classList.toggle('peek-open', on);
   }
   const later = () => { clearTimeout(closer); closer = setTimeout(() => set(false), 120); };
-  link.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') set(true); });
+  link.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') { aimAt(e.clientX); set(true); } });
+  link.addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse' && !card.contains(e.target)) aimAt(e.clientX); });
   link.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') later(); });
-  link.addEventListener('focus', () => { if (link.matches(':focus-visible')) set(true); });
+  link.addEventListener('focus', () => { if (link.matches(':focus-visible')) { aim = 0; set(true); } });
   link.addEventListener('blur', later);
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && open) set(false); });
 
