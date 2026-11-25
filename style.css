@@ -273,7 +273,7 @@ a.unsw:focus-visible { outline: 2px solid #2d3a68; outline-offset: 3px; border-r
 .unsw-slot {
   --h: 11.5px; --shield-h: 15px; --w: calc(var(--shield-h) * 63.43 / 83.4); --gap: .27em;
   /* the slot keeps the letters' height (the shield is a touch taller) and holds the shield plus one word space after it:
-     the space before it is the sentence's own, so the shield sits evenly between "@" and the word */
+     the space before it is the sentence's own, so the shield sits evenly between "at" and the word */
   position: relative; display: block; height: var(--h); width: calc(var(--w) + var(--gap)); transform: translateY(.5px);
 }
 .unsw-slot img {
