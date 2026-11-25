@@ -21,13 +21,15 @@ html, body {
    along the bottom, so rain from a clicked cloud can be watched all the way down to the flowers it waters.
    (On a screen too short for it all, the page grows and scrolls rather than overlap.) */
 :root {
-  --sky: clamp(88px, 21vh, 260px);        /* sky above the panel's content */
   --ground: clamp(156px, 24vh, 260px);    /* height of the ground band */
 }
+/* the card is centred on the screen: the content sits in the middle of the page, with as much room above it as
+   below (where it keeps clear of the ground) */
 body {
   position: relative;
   min-height: 100vh;
   min-height: 100dvh;
+  display: flex; flex-direction: column; justify-content: center;
 }
 
 /* The sky sits behind the page and scrolls away with it. */
@@ -47,7 +49,9 @@ body {
   width: 100%;
   max-width: 628px;
   margin: 0 auto;
-  padding: var(--sky) 16px calc(var(--ground) - 24px);   /* the ground's top rows are open air */
+  /* the ground's top rows are open air; the top is 6px shorter because the sky's card reaches 6px further below
+     the panel than above it (src/sky.js), so the card itself is what's centred */
+  padding: calc(var(--ground) - 30px) 16px calc(var(--ground) - 24px);
 }
 
 /* The ground (src/ground.js): pale green tiles with the crayon meadow growing on top. It is see-through
@@ -98,7 +102,7 @@ html.playing, html.playing * { -webkit-user-select: none; user-select: none; }
 @media (prefers-reduced-motion: reduce) { .meaning, .meaning.show { transition: none; } }
 /* the swash sits under all of this line's text. No z-index here: that would make the line its own layer, and "the web"
    (in this same line) couldn't rise above the hush when it opens; the swash sits under the text within #content's layer */
-.intro .hi + p { position: relative; font-size: 16px; }
+.intro .hi + p { position: relative; font-size: 18px; }
 .name { position: relative; white-space: nowrap; font-weight: 600; color: #2d3a68; }
 .name canvas { position: absolute; z-index: -1; left: -5px; top: 30%; width: calc(100% + 10px); height: 80%; pointer-events: none; }
 /* "shaf" copies my email (src/contact.js): the swash already says it's live, so hovering only gives it a pointer.
@@ -139,13 +143,14 @@ html.playing, html.playing * { -webkit-user-select: none; user-select: none; }
    it navy over a dotted tomato underline. */
 /* GitHub and LinkedIn moved up into "the web", but the panel (and the sky's card around it) keeps the size it had
    with their two rows here. The home view's lines share that height out evenly instead: "kia ora!", the "shaf"
-   paragraph and "CV on request" in the corner sit about 35px apart. */
-#view-home .hi { margin-bottom: 34px; }
-#view-home .hi + p { margin-bottom: 12px; }   /* with the one paragraph, "CV on request" sits about 35px under it, as the paragraph does under "kia ora!" */
+   paragraph and "CV on request" in the corner sit evenly apart, about 34px from letters to letters. */
+#view-home .hi { margin-bottom: 18px; }
+#view-home .hi + p { margin-bottom: 0; }   /* with the collections' margin, "CV on request" sits as far under the paragraph as the paragraph does under "kia ora!" */
+#view-home .collections { margin-top: 16px; }
 .collections { position: relative; min-height: 17px; }
 .cv {
   position: absolute; right: 0; top: calc(100% - 2px); margin: 0; padding: 0 1px; cursor: default;
-  font-size: 12px; font-weight: 500; line-height: 1.4; letter-spacing: .01em; color: #5f6470;
+  font-size: 14px; font-weight: 500; line-height: 1.4; letter-spacing: .01em; color: #5f6470;
   text-decoration: underline dotted transparent; text-decoration-thickness: 1.5px; text-underline-offset: 3px;
   transition: color .2s, text-decoration-color .2s;
 }
@@ -172,13 +177,13 @@ html.playing, html.playing * { -webkit-user-select: none; user-select: none; }
 .web-btn:focus-visible { outline: 2px solid #2d3a68; outline-offset: 3px; }
 /* the globe stands as tall as the words beside it */
 /* (it isn't tilted or scaled on hover, which would resample it and soften the crayon; it spins instead) */
-.web-btn .doodle { display: inline-block; width: 19px; height: 19px; margin: 0 4px 0 0; vertical-align: -5px; transition: none; }
-.web-btn .doodle canvas { width: 19px; height: 19px; }
+.web-btn .doodle { display: inline-block; width: 21px; height: 21px; margin: 0 4px 0 0; vertical-align: -5px; transition: none; }
+.web-btn .doodle canvas { width: 21px; height: 21px; }
 /* the words are underlined by hand (src/web.js draws it): a little coil, like a phone cord. The light coil draws
    in after the swash under "shaf" and stays; opening "the web" traces a dark coil over it along the same path, and
    closing rubs the dark one gently back out. */
 .web-label { position: relative; }
-.web-ink { position: absolute; left: -2px; top: calc(100% - 2px); overflow: visible; pointer-events: none; }
+.web-ink { position: absolute; left: -.125em; top: calc(100% - 2px); overflow: visible; pointer-events: none; }
 /* traced along its length; the dash waits just off the path, so its round caps leave no dot */
 .web-ink .tr { fill: none; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round;
   stroke-dasharray: 1 2; stroke-dashoffset: 1.05; }
@@ -209,7 +214,7 @@ html.playing, html.playing * { -webkit-user-select: none; user-select: none; }
    src/web.js, is how far it sits from the centre), and springs out to its place, the middle one first */
 .social {
   --s: 1; --i: 0; --from: 0px;
-  position: relative; display: block; width: calc(48px * var(--s)); height: calc(48px * var(--s)); border-radius: 10px;
+  position: relative; display: block; width: calc(54px * var(--s)); height: calc(54px * var(--s)); border-radius: 10px;
   opacity: 0; transform: translate(var(--from), 16px) scale(.2); transform-origin: 50% 100%;
   transition: opacity .12s, transform .18s ease-in;
 }
@@ -263,21 +268,21 @@ html[data-intro]:not(.intro-welcome) :is(.intro .hi + p ~ p, .cv) { opacity: 0; 
 .intro-welcome[data-intro] .cv { animation: intro-fade .8s .35s ease-out backwards; }
 .intro-go[data-intro] #ground { animation: intro-surface 1.2s 1.1s cubic-bezier(.25, .8, .3, 1); }
 
-/* "UNSW" in the uni's own wordmark (from the official vector logo UNSW's handbook site serves; at 11.5px tall its caps
+/* "UNSW" in the uni's own wordmark (from the official vector logo UNSW's handbook site serves; at 13px tall its caps
    match the sentence's), with the shield (the same logo's crest without its motto scroll) always shown in front of it,
    a little taller than the letters and centred on them. */
 .intro a.unsw { display: inline-flex; align-items: baseline; white-space: nowrap; text-decoration: none; outline: none; }
 a.unsw:focus-visible { outline: 2px solid #2d3a68; outline-offset: 3px; border-radius: 3px; }
 .unsw img { display: block; user-select: none; -webkit-user-drag: none; }
-.unsw-mark { height: 11.5px; width: auto; transform: translateY(.5px); }
+.unsw-mark { height: 13px; width: auto; transform: translateY(.5px); }
 .unsw-slot {
-  --h: 11.5px; --shield-h: 15px; --w: calc(var(--shield-h) * 63.43 / 83.4); --gap: .27em;
+  --h: 13px; --shield-h: 17px; --w: calc(var(--shield-h) * 63.43 / 83.4); --gap: .27em;
   /* the slot keeps the letters' height (the shield is a touch taller) and holds the shield plus one word space after it:
      the space before it is the sentence's own, so the shield sits evenly between "at" and the word */
   position: relative; display: block; height: var(--h); width: calc(var(--w) + var(--gap)); transform: translateY(.5px);
 }
 .unsw-slot img {
   position: absolute; left: 0; bottom: calc((var(--h) - var(--shield-h)) / 2); height: var(--shield-h); width: auto;   /* centred on the caps */
-  /* kept from the old hover reveal: these put the shield on its own layer, which is how it has always been drawn */
-  filter: blur(0); transform-origin: 50% 70%; will-change: opacity, transform, filter;
+  /* no filter or will-change here: either would put the shield on a layer of its own, rasterized once and then
+     resampled at its fractional position, which leaves the fine crest looking soft and pixelated */
 }
