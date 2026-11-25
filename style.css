@@ -278,4 +278,6 @@ a.unsw:focus-visible { outline: 2px solid #2d3a68; outline-offset: 3px; border-r
 }
 .unsw-slot img {
   position: absolute; left: 0; bottom: calc((var(--h) - var(--shield-h)) / 2); height: var(--shield-h); width: auto;   /* centred on the caps */
+  /* kept from the old hover reveal: these put the shield on its own layer, which is how it has always been drawn */
+  filter: blur(0); transform-origin: 50% 70%; will-change: opacity, transform, filter;
 }
