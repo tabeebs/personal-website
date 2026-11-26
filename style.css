@@ -259,6 +259,9 @@ html.selecting :is(.hi, .name, a.unsw, .now a, .web) { pointer-events: none; }
    with their two rows here. The home view's lines share that height out evenly instead: "kia ora!", the "shaf"
    paragraph and "CV on request" in the corner sit evenly apart, about 32px from one line's baseline to the next one's capitals. */
 #view-home .hi { margin-bottom: 28px; }   /* a little more air under the greeting, so the page doesn't feel crowded at the top */
+/* and the same air under "thoughts": its list sits as far below it, foot of the heading to the top of the first title,
+   as the "shaf" line does below "kia ora!" (the list's line is a little taller, hence a little less margin) */
+#view-writing .hi { margin-bottom: 24.5px; }
 #view-home .hi + p { margin-bottom: 0; }   /* with the collections' margin, "CV on request" sits as far under the paragraph as the paragraph does under "kia ora!" */
 #view-home .collections { margin-top: 6px; }   /* Poppins sits low in its line box, so the CV note comes up to match */
 .collections { position: relative; min-height: 17px; }
