@@ -191,7 +191,8 @@ for (const view of document.querySelectorAll('.view')) {
 // Between the swash under "shaf" and the coil under "the web", UNSW gets its own small moment: the crest lights up,
 // the way light catches a polished badge. It brightens with a soft warm glow while a bright slanted band glides
 // across it (like the glint the old Experience logos had), clipped to the shield's own shape (style.css masks it
-// with shield.svg). Settles about a third of the way through, so the coil comes in while it's still shining.
+// with shield.svg), then runs on across the U-N-S-W letters. Settles about a third of the way through, so the
+// coil comes in while it's still shining.
 const unswSlot = document.querySelector('.unsw-slot');
 function unswNod(delay = 0) {
   if (!unswSlot || calm.matches) return Promise.resolve();
@@ -215,6 +216,26 @@ function unswNod(delay = 0) {
     { filter: 'brightness(1.3) drop-shadow(0 0 3px rgba(244, 210, 124, .95))', offset: .45 },
     { filter: 'brightness(1) drop-shadow(0 0 0 rgba(244, 210, 124, 0))' },
   ], { duration: SHINE, delay, easing: 'ease-in-out' });
+  // and the light runs on across the letters, U to W, as one sweep with the crest's: each letter catches it in
+  // turn (the band is clipped to the lettering, style.css masks it with wordmark.svg)
+  const mark = unswSlot.parentElement?.querySelector('.unsw-mark');
+  if (mark) {
+    const gleam = document.createElement('span');
+    gleam.className = 'unsw-gleam';
+    gleam.setAttribute('aria-hidden', 'true');
+    Object.assign(gleam.style, { left: `${mark.offsetLeft}px`, top: `${mark.offsetTop}px`, width: `${mark.offsetWidth}px`, height: `${mark.offsetHeight}px` });
+    gleam.append(document.createElement('span'));
+    mark.after(gleam);
+    const w = mark.offsetWidth, band = w * .4;
+    gleam.firstChild.style.width = `${band}px`;
+    gleam.firstChild.animate([
+      { transform: `translateX(${-band * 1.3}px) skewX(-20deg)`, opacity: 0 },
+      { opacity: 1, offset: .12 },
+      { opacity: 1, offset: .85 },
+      { transform: `translateX(${w + band * .3}px) skewX(-20deg)`, opacity: 0 },
+    ], { duration: 900, delay: delay + SHINE * .42, easing: 'cubic-bezier(.45, .1, .35, 1)', fill: 'backwards' })
+      .finished.then(() => gleam.remove(), () => gleam.remove());
+  }
   // the coil under "the web" starts while the band is still crossing, so there's no lull between them
   return pause(delay + SHINE * .3);
 }
