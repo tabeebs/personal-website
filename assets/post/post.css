@@ -43,10 +43,15 @@ body.post-page[data-bg="night"] { --page: #16171c; --ink: #e6e4df; --ink-soft: #
 /* ---- the drawing that plays once ---- */
 .post-art { height: 120px; margin: 0 0 22px; color: var(--heading); }
 .post-page[data-art="none"] .post-art { display: none; }
-.post-art svg { display: block; height: 100%; width: auto; overflow: visible; }
+.post-art svg { display: block; height: 100%; width: auto; max-width: 100%; overflow: visible; }
 .post-art .ink { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round;
   stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw var(--dur, .5s) cubic-bezier(.55, .1, .35, 1) var(--at, 0s) forwards; }
 .post-art .ink.accent { stroke: var(--accent); }
+.post-art .ink.thin { stroke-width: 1.6; }
+/* the skincare drop falls into place as it's drawn */
+.post-art .ink.fall { animation: draw var(--dur, .5s) cubic-bezier(.55, .1, .35, 1) var(--at, 0s) forwards,
+  fall .5s cubic-bezier(.5, 0, .7, .4) var(--at, 0s) both; }
+@keyframes fall { from { transform: translateY(-30px); } to { transform: none; } }
 .post-art .wash { opacity: 0; animation: wash .5s ease-out var(--at, 0s) forwards; }
 .post-art .pop { transform-box: fill-box; transform-origin: 50% 100%; transform: scale(0);
   animation: pop .45s cubic-bezier(.3, 1.7, .5, 1) var(--at, 0s) forwards; }

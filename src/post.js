@@ -9,6 +9,46 @@ const SVG = 'http://www.w3.org/2000/svg';
 
 // each stroke: [path, when it starts (s), how long it takes (s), extra class]
 const DRAWINGS = {
+  // the interconnectedness of attack on titan: episodes along a line, and arcs looping between them, like a tiny
+  // trailer for the arc diagram further down the piece
+  arcs: {
+    view: '0 0 220 120',
+    strokes: [
+      ['M8 104 C70 103 150 105 212 104', 0, .4],
+      ['M24 104 C24 59 92 59 92 104', .65, .45],
+      ['M58 104 C58 36 160 36 160 104', .85, .55, 'accent'],
+      ['M92 104 C92 81 126 81 126 104', 1.05, .3],
+      ['M24 104 C24 -10 196 -10 196 104', 1.15, .7],
+      ['M126 104 C126 57 196 57 196 104', 1.4, .45, 'accent'],
+    ],
+    pops: [[24, 104, 2.8, .3], [58, 104, 2.8, .36], [92, 104, 2.8, .42], [126, 104, 2.8, .48], [160, 104, 2.8, .54], [196, 104, 2.8, .6]],
+  },
+  // closed mouths don't get fed: a paper plane (the cold email, the linkedin message) loops once and lands up high
+  plane: {
+    view: '0 0 220 120',
+    strokes: [
+      ['M8 104 C40 104 58 64 88 62 C118 60 122 96 100 96 C78 96 84 56 120 46 C148 38 168 40 186 34', 0, .95, 'accent thin'],
+      ['M182 40 L214 20 L196 46 Z', .85, .35],
+      ['M214 20 L190 37 L196 46', 1.05, .25],
+    ],
+    washes: [['M182 40 L214 20 L196 46 Z', 1.15]],
+  },
+  // why is skincare so confusing?: the routine lined up on a shelf, one bottle at a time, and a drop to finish
+  bottles: {
+    view: '0 0 220 120',
+    strokes: [
+      ['M10 111 C80 110 150 112 210 111', 0, .4],
+      ['M32 110 L36 58 L54 58 L58 110 Z', .3, .45],
+      ['M40 58 L40 47 L50 47 L50 58', .6, .2],
+      ['M84 110 C79 110 79 77 86 72 L106 72 C113 77 113 110 108 110 Z', .55, .45],
+      ['M90 72 L90 63 L102 63 L102 72 M92 63 L92 50 C92 42 100 42 100 50 L100 63', .85, .35],
+      ['M134 110 L134 67 C134 59 156 59 156 67 L156 110 Z', .8, .45],
+      ['M141 61 L141 50 L149 50 L149 61 M145 50 L145 44 L161 44', 1.1, .25],
+      ['M39 84 L51 84 M88 92 L104 92 M139 86 L151 86', 1.25, .3, 'accent'],
+      ['M186 76 C182 84 178 88 178 93 C178 98 182 101 186 101 C190 101 194 98 194 93 C194 88 190 84 186 76 Z', 1.45, .35, 'accent fall'],
+    ],
+    washes: [['M186 76 C182 84 178 88 178 93 C178 98 182 101 186 101 C190 101 194 98 194 93 C194 88 190 84 186 76 Z', 1.6]],
+  },
   house: {
     view: '0 -8 200 128',
     strokes: [
@@ -99,7 +139,7 @@ function drawArt(kind) {
   art.append(svg);
 }
 
-drawArt(body.dataset.art || 'house');
+drawArt(body.dataset.art || 'arcs');
 
 /* ---------------- the contents: the rail, and the folded-up list ---------------- */
 
@@ -226,7 +266,7 @@ if (demo) {
       return;
     }
     if (b.hasAttribute('data-replay')) {
-      if (body.dataset.art === 'none') { body.dataset.art = 'house'; sync(); }
+      if (body.dataset.art === 'none') { body.dataset.art = 'arcs'; sync(); }
       scrollTo({ top: 0, behavior: 'smooth' });
       drawArt(body.dataset.art);
       return;

@@ -11,7 +11,7 @@
 </head>
 <!-- A reading page: one flat colour behind it (no sky, no meadow). data-bg / data-art / data-rail / data-font are
      what the demo panel at the bottom right switches; a real piece just sets the ones it wants. -->
-<body class="piece-page post-page" data-bg="paper" data-art="house" data-rail="hover" data-font="sans">
+<body class="piece-page post-page" data-bg="paper" data-art="arcs" data-rail="hover" data-font="sans">
 
   <!-- the contents rail (src/post.js fills it from the piece's h2s and h3s) -->
   <nav class="rail" aria-label="On this page">
@@ -109,6 +109,9 @@
       <div class="demo-group">
         <span class="demo-label">opening drawing</span>
         <div class="demo-seg" data-set="art">
+          <button type="button" data-value="arcs">aot: arcs</button>
+          <button type="button" data-value="plane">closed mouths: plane</button>
+          <button type="button" data-value="bottles">skincare: bottles</button>
           <button type="button" data-value="house">house</button>
           <button type="button" data-value="sprout">sprout</button>
           <button type="button" data-value="cloud">ascii cloud</button>
