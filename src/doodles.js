@@ -1,6 +1,6 @@
 // Doodles: crayon renditions of the email icon beside its link, the GitHub and LinkedIn icons that pop up out of
 // "the web" (src/web.js), the globe beside those words, and the house and
-// briefcase on the panel's tabs, in the same crayon language as the meadow. Fills are rows of short waxy
+// notebook on the panel's tabs, in the same crayon language as the meadow. Fills are rows of short waxy
 // strokes over a pastel layer printed slightly out of register (letters and the Octocat are paper left bare),
 // the linework is navy crayon, and the whole drawing redraws a few times a second.
 // At rest a drawing boils slowly. Hovering its row (or focusing its link) boils it on twos, slides the colour
@@ -203,6 +203,31 @@ const DRAWINGS = {
     out.push(line([[4.8, 20.6 + hop], [31.2, 20.6 + hop]], C.navy, .9));       // the seam of the lid
     const clasp = rect(16, 18.6 + hop, 20, 22.8 + hop);
     out.push(fill(clasp, g > .3 ? C.mustard : C.navy, C.mustardP));
+    return out;
+  },
+  // Writing: a spiral notebook. On hover a pencil swoops in and scribbles a line across the page.
+  notebook(t) {
+    const g = ease(t), out = [];
+    const page = roundRect(7, 5, 28, 31, 2);
+    out.push(fill(page, C.teal, C.tealP));
+    out.push(line(page.concat([page[0]]), C.navy, 1.1));
+    for (const y of [13, 17.5, 22, 26.5]) out.push(line([[11.5, y], [24.5, y]], C.navy, .6));
+    for (const y of [8, 13, 18, 23, 28]) out.push(line(circle(7, y, 1.5, 7).concat([[8.5, y]]), C.navy, .9));   // the spiral
+    // the scribble: a wavy line written along the second rule as the pencil passes
+    const w = clamp01((t - .2) / .7), end = 11.5 + 13 * w;
+    if (w > .02) {
+      const pts = [];
+      for (let x = 11.5; x <= end; x += .8) pts.push([x, 17.5 - 1.1 - Math.sin(x * 1.6) * .9]);
+      out.push(line(pts, C.tomato, 1.1));
+    }
+    // the pencil, leaning on the page, its tip on the end of the scribble
+    const px = lerp(31, end, backOut(clamp01(t * 1.4))), py = lerp(4, 16.4, backOut(clamp01(t * 1.4)));
+    if (g > .02) {
+      const body = [[px, py], [px + 1.6, py - 2.4], [px + 9, py - 9.6], [px + 10.6, py - 8], [px + 3.2, py - .8]];
+      out.push(fill(body, C.mustard, C.mustardP));
+      out.push(line(body.concat([body[0]]), C.navy, .9));
+      out.push(fill([[px, py], [px + 1.6, py - 2.4], [px + 3.2, py - .8]], C.navy, C.navy));
+    }
     return out;
   },
 };

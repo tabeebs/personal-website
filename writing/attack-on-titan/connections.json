@@ -1,0 +1,21 @@
+{
+  "rewatch": 8,
+  "loggedThrough": 10,
+  "types": {
+    "foreshadowing": "#dc4c36",
+    "parallel": "#25a088",
+    "callback": "#7f71d4",
+    "backstory": "#dc9f22"
+  },
+  "connections": [
+    {
+      "id": "levi-disgusting",
+      "from": { "ep": 9, "t": null },
+      "to": { "ep": 50, "t": null },
+      "type": "backstory",
+      "characters": ["Levi", "Kenny"],
+      "note": "Levi says \"disgusting\" to the blood on his hand, and it seems like he's a clean freak. But in the very next moment he takes his underling's hand with bloody hands: his leadership, and a second meaning, because the clean-freak habit comes from growing up in the underground. Connects to season 3 part 2, where we learn about Kenny Ackerman.",
+      "check": "Taken from your message. Set the exact episodes and timestamps."
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>tabeebs · attack on titan</title>
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <link rel="preload" href="/assets/fonts/poppins-400-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="/style.css?v=33" />
+  <link rel="stylesheet" href="/writing/attack-on-titan/aot.css?v=1" />
+</head>
+<body class="piece-page">
+  <main class="piece-main">
+    <a class="back" href="/writing">← writing</a>
+    <h1 class="piece-h1">attack on titan</h1>
+    <p class="piece-sub">working title</p>
+
+    <!-- your writing goes in these. They're empty on purpose. -->
+    <div class="slot">your intro goes here</div>
+
+    <!-- the arc diagram (src/arcs.js) -->
+    <figure class="arcs" id="arcs">
+      <div class="arc-controls">
+        <div class="seg" role="group" aria-label="Colour arcs by">
+          <span class="ctl-label">colour by</span>
+          <button type="button" data-colour="distance" aria-pressed="true">distance</button>
+          <button type="button" data-colour="type" aria-pressed="false">type</button>
+        </div>
+        <div class="legend"></div>
+        <label class="ctl"><span class="ctl-label">spoilers</span><select id="upto"></select></label>
+        <label class="ctl sample-toggle"><input type="checkbox" id="samples" /> show sample arcs</label>
+      </div>
+      <div class="chart"></div>
+      <div class="arc-tip" hidden></div>
+      <figcaption class="arc-stats"></figcaption>
+      <div class="arc-card" aria-live="polite"></div>
+    </figure>
+
+    <div class="slot">more writing here, if you want it</div>
+  </main>
+
+  <script type="module" src="/build/arcs.js"></script>
+</body>
+</html>

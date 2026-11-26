@@ -1,0 +1,5 @@
+{
+  "_about": "Made-up arcs so the layout can be judged with a realistic amount of data. None of them mean anything. Delete this file (and the sample toggle in src/arcs.js) once connections.json has enough real ones.",
+  "count": 70,
+  "seed": 8
+}
