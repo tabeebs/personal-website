@@ -188,26 +188,33 @@ for (const view of document.querySelectorAll('.view')) {
   }).observe(view, { attributes: true, attributeFilter: ['hidden'] });
 }
 // ---- UNSW's shine ----
-// Between the swash under "shaf" and the coil under "the web", UNSW gets its own small moment: a soft slanted band
-// of light glides across the crest, the way light catches a polished badge (like the glint the old Experience logos
-// had). The band is clipped to the shield's own shape (style.css masks it with shield.svg). Settles about a third
-// of the way through, so the coil comes in while it's still shining.
+// Between the swash under "shaf" and the coil under "the web", UNSW gets its own small moment: the crest lights up,
+// the way light catches a polished badge. It brightens with a soft warm glow while a bright slanted band glides
+// across it (like the glint the old Experience logos had), clipped to the shield's own shape (style.css masks it
+// with shield.svg). Settles about a third of the way through, so the coil comes in while it's still shining.
 const unswSlot = document.querySelector('.unsw-slot');
 function unswNod(delay = 0) {
   if (!unswSlot || calm.matches) return Promise.resolve();
-  const SHINE = 900;
+  const SHINE = 1100;
   const shine = document.createElement('span');
   shine.className = 'unsw-shine';
   shine.setAttribute('aria-hidden', 'true');
   shine.append(document.createElement('span'));
   unswSlot.append(shine);
   shine.firstChild.animate([
-    { transform: 'translateX(-140%) skewX(-20deg)', opacity: 0 },
-    { opacity: 1, offset: .2 },
-    { opacity: 1, offset: .75 },
-    { transform: 'translateX(140%) skewX(-20deg)', opacity: 0 },
-  ], { duration: SHINE, delay, easing: 'cubic-bezier(.35, .1, .25, 1)', fill: 'backwards' })
+    { transform: 'translateX(-150%) skewX(-20deg)', opacity: 0 },
+    { opacity: 1, offset: .15 },
+    { opacity: 1, offset: .8 },
+    { transform: 'translateX(150%) skewX(-20deg)', opacity: 0 },
+  ], { duration: SHINE, delay, easing: 'cubic-bezier(.4, .1, .3, 1)', fill: 'backwards' })
     .finished.then(() => shine.remove(), () => shine.remove());
+  // the crest itself brightens and glows while the band crosses (only for the moment: a filter left on it would
+  // soften the fine crest, style.css)
+  unswSlot.querySelector('img')?.animate([
+    { filter: 'brightness(1) drop-shadow(0 0 0 rgba(244, 210, 124, 0))' },
+    { filter: 'brightness(1.3) drop-shadow(0 0 3px rgba(244, 210, 124, .95))', offset: .45 },
+    { filter: 'brightness(1) drop-shadow(0 0 0 rgba(244, 210, 124, 0))' },
+  ], { duration: SHINE, delay, easing: 'ease-in-out' });
   // the coil under "the web" starts while the band is still crossing, so there's no lull between them
   return pause(delay + SHINE * .3);
 }
