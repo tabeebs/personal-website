@@ -114,18 +114,26 @@ if (link) {
   }
 
   // ---- drift: the window follows the pointer along the logo, sliding a little way left or right and leaning
-  // towards it from its foot, eased so it trails the pointer softly ----
-  const FOLLOW = .9, LEAN = 2.2;   // px moved per px of pointer, and degrees of lean at the logo's ends
+  // towards it from its foot, eased so it trails the pointer softly. Its rest point is the N of the wordmark, not the
+  // middle of crest plus letters: that's where people read the logo's centre, so the window stands level over the N ----
+  const FOLLOW = .9, LEAN = 1.2;   // px moved per px of pointer, and degrees of lean half a logo's width from the N
+  const N_AT = .351;               // the N's middle, as a fraction of the wordmark's width (from wordmark.svg's paths)
+  const mark = link.querySelector('.unsw-mark');
   let aim = 0, drift = 0, lastAt = 0;
+  function geometry() {
+    const r = link.getBoundingClientRect(), m = (mark || link).getBoundingClientRect();
+    const n = mark ? m.left + m.width * N_AT : r.left + r.width / 2;
+    return { r, n, half: r.width / 2 || 1, off: n - (r.left + r.width / 2) };   // off: the N's distance from the logo's middle
+  }
   function aimAt(x) {
-    const r = link.getBoundingClientRect(), half = r.width / 2 || 1;
-    aim = Math.max(-1, Math.min(1, (x - (r.left + half)) / half)) * half;   // px from the logo's middle, kept within it
+    const { r, n } = geometry();
+    aim = Math.max(r.left, Math.min(r.right, x)) - n;   // px from the N, kept within the logo
   }
   function sway(now) {
     const k = lastAt ? 1 - Math.exp(-(now - lastAt) / 90) : 1; lastAt = now;
     drift += (aim - drift) * k;
-    const half = link.getBoundingClientRect().width / 2 || 1;
-    card.style.setProperty('--dx', `${(drift * FOLLOW).toFixed(2)}px`);
+    const { half, off } = geometry();
+    card.style.setProperty('--dx', `${(off + drift * FOLLOW).toFixed(2)}px`);
     card.style.setProperty('--tilt', `${(drift / half * LEAN).toFixed(3)}deg`);
   }
 
@@ -163,7 +171,7 @@ if (link) {
       load();
       openedAt = 0; revealed = false;
       drift = aim; lastAt = 0;   // it opens where the pointer already is, rather than sliding over from the middle
-      card.style.setProperty('--dx', '0px'); card.style.setProperty('--tilt', '0deg');
+      card.style.setProperty('--dx', `${geometry().off.toFixed(2)}px`); card.style.setProperty('--tilt', '0deg');
       place();
       if (!raf) raf = requestAnimationFrame(frame);
     }
