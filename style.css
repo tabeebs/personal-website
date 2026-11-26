@@ -65,7 +65,7 @@ body {
   position: relative;
   z-index: 1;
   width: 100%;
-  max-width: 640px;
+  max-width: 628px;
   margin: 0 auto;
   /* the ground's top rows are open air. The card is centred in the screen above the grass, not the whole screen:
      the grass row sits 72px up from the bottom (6 rows of 12px, src/ground.js), so the top is 72px shorter, and 6px
@@ -290,21 +290,21 @@ html[data-intro]:not(.intro-welcome) :is(.intro .hi + p ~ p, .now, .cv) { opacit
 .intro-welcome[data-intro] .cv { animation: intro-fade .8s .35s ease-out backwards; }
 .intro-go[data-intro] #ground { animation: intro-surface 1.2s 1.1s cubic-bezier(.25, .8, .3, 1); }
 
-/* "UNSW" in the uni's own wordmark (from the official vector logo UNSW's handbook site serves), with the shield (the
-   same logo's crest without its motto scroll) always shown in front of it; letters and shield stand the same height,
-   14px, both on the baseline, so the word doesn't look smaller than its crest. */
+/* "UNSW" in the uni's own wordmark (from the official vector logo UNSW's handbook site serves; at 12px tall its caps
+   match Poppins' at 17px), with the shield (the same logo's crest without its motto scroll) always shown in front of it,
+   a little taller than the letters and centred on them. */
 .intro a.unsw { display: inline-flex; align-items: baseline; white-space: nowrap; text-decoration: none; outline: none; }
 a.unsw:focus-visible { outline: 2px solid #2d3a68; outline-offset: 3px; border-radius: 3px; }
 .unsw img { display: block; user-select: none; -webkit-user-drag: none; }
-.unsw-mark { height: 14px; width: auto; transform: translateY(.5px); }
+.unsw-mark { height: 12px; width: auto; transform: translateY(.5px); }
 .unsw-slot {
-  --h: 14px; --shield-h: 14px; --w: calc(var(--shield-h) * 63.43 / 83.4); --gap: .27em;
-  /* the slot keeps the letters' height and holds the shield plus one word space after it:
+  --h: 12px; --shield-h: 16px; --w: calc(var(--shield-h) * 63.43 / 83.4); --gap: .27em;
+  /* the slot keeps the letters' height (the shield is a touch taller) and holds the shield plus one word space after it:
      the space before it is the sentence's own, so the shield sits evenly between "at" and the word */
   position: relative; display: block; height: var(--h); width: calc(var(--w) + var(--gap)); transform: translateY(.5px);
 }
 .unsw-slot img {
-  position: absolute; left: 0; bottom: calc((var(--h) - var(--shield-h)) / 2); height: var(--shield-h); width: auto;
+  position: absolute; left: 0; bottom: calc((var(--h) - var(--shield-h)) / 2); height: var(--shield-h); width: auto;   /* centred on the caps */
   /* no filter or will-change here: either would put the shield on a layer of its own, rasterized once and then
      resampled at its fractional position, which leaves the fine crest looking soft and pixelated */
 }
