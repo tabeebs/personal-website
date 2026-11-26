@@ -163,7 +163,6 @@ const landed = (els) => Promise.all(els.flatMap((e) => e.getAnimations()).map(as
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));
 // the page's opening swashes, all swept in
 const opening = [];
-let returns = 0;   // how many times a view has come back (only the latest replay goes on)
 for (const view of document.querySelectorAll('.view')) {
   const letters = [...view.querySelectorAll('.hi')].flatMap(lettered);
   const names = [...view.querySelectorAll('.name')].map(swash);
@@ -181,18 +180,8 @@ for (const view of document.querySelectorAll('.view')) {
     return landed([...letters, ...lines]).then(() => pause(BEAT))
       .then(() => Promise.all(names.map((n) => n.sweep())));
   }));
-  // coming back to a view: a wave through its heading, then the same order as the opening: the swash sweeps in
-  // again, UNSW nods, and the coil under "the web" draws in again (src/web.js). A quick switch away and back
-  // restarts it (only the latest run gets to go on).
-  new MutationObserver(() => {
-    if (view.hidden) return;
-    const run = ++returns;
-    wave(letters, 260);
-    if (!names.length) return;
-    Promise.all(names.map((n) => n.sweep(420)))
-      .then(() => run === returns && !view.hidden && unswNod())
-      .then(() => run === returns && !view.hidden && window.__recoil?.());
-  }).observe(view, { attributes: true, attributeFilter: ['hidden'] });
+  // coming back to a view (from Writing, say) replays nothing: the swash, UNSW and the coil under "the web" stay
+  // just as the opening left them
 }
 // ---- UNSW's shine ----
 // Between the swash under "shaf" and the coil under "the web", UNSW gets its own small moment: a soft slanted band
