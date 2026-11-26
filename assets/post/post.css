@@ -54,9 +54,9 @@ body.post-page {
 .rail-list li.active .label { color: var(--ink); }
 .rail-list a:hover .label { color: var(--ink); }
 /* the section you're in always shows its name; the others show only while you point at the rail (or move through it
-   with the keyboard). A click leaves the link focused, but once the pointer moves away the others go again */
-.rail-list li.active .label, .rail:hover .label, .rail:has(a:focus-visible) .label { opacity: 1; translate: 0 0; }
-.rail:hover li:not(.active) .label { transition-delay: calc(var(--i, 0) * 18ms); }
+   with the keyboard). Pointing at "back to thoughts" above it doesn't count. */
+.rail-list li.active .label, .rail-track:hover .label, .rail-list:has(a:focus-visible) .label { opacity: 1; translate: 0 0; }
+.rail-track:hover li:not(.active) .label { transition-delay: calc(var(--i, 0) * 18ms); }
 .rail-list a:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
 @media (min-width: 1120px) {
