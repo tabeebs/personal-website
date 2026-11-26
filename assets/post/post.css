@@ -1,10 +1,10 @@
 /* A reading page for a piece of writing (writing/<name>.html, src/post.js): night behind it, a contents rail down the left whose orange line follows you through the piece, and a list
    of other pieces that brings the one you point at forward. */
 
-/* ---- colours: always night, and no orange: the accent is a soft warm white ---- */
+/* ---- colours: always night; the accent is the home page's highlighter gold (its text selection, style.css) ---- */
 body.post-page {
   --page: #16171c; --ink: #e6e4df; --ink-soft: #b3b0a9; --muted: #7f7c76; --rule: #2c2d34;
-  --accent: #d8d4cb; --heading: #f1efe9; --card: #1e1f25;
+  --accent: #f4d27c; --heading: #f1efe9; --card: #1e1f25;
   background: var(--page); color: var(--ink); color-scheme: dark;
 }
 
