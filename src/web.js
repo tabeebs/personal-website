@@ -55,6 +55,20 @@ if (web) {
   };
   // and a pointer dragging out a text selection is highlighting, not reaching for the web: with the button held
   // down, the words never open, however long it rests there
+  // The same goes for the rest of the page's hover moments (UNSW's gleam, Salesforce's and Kirby's previews, the
+  // swash under "shaf", the letters of "kia ora!"): once the mouse is held down and dragged a few pixels, it's a
+  // selection, and html.selecting turns those spots deaf to the pointer until the button comes back up (style.css).
+  // A plain click doesn't move, so links still click as usual.
+  let downAt = null;
+  document.addEventListener('pointerdown', (e) => { if (e.pointerType === 'mouse' && e.button === 0) downAt = [e.clientX, e.clientY]; }, { capture: true, passive: true });
+  document.addEventListener('pointermove', (e) => {
+    if (!downAt || !(e.buttons & 1) || root.classList.contains('selecting')) return;
+    if (Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 4) root.classList.add('selecting');
+  }, { passive: true });
+  const unselect = () => { downAt = null; root.classList.remove('selecting'); };
+  document.addEventListener('pointerup', unselect, { capture: true, passive: true });
+  document.addEventListener('pointercancel', unselect, { passive: true });
+  addEventListener('blur', unselect);
   let pressed = false;
   document.addEventListener('pointerdown', (e) => { if (e.pointerType === 'mouse') pressed = (e.buttons & 1) === 1; }, { capture: true, passive: true });
   document.addEventListener('pointerup', (e) => { if (e.pointerType === 'mouse') pressed = false; }, { capture: true, passive: true });

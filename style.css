@@ -93,6 +93,9 @@ a { color: inherit; }
 /* While a press that began outside the text plays with the rain (src/sky.js), dragging across the panel
    doesn't select anything. */
 html.playing, html.playing * { -webkit-user-select: none; user-select: none; }
+/* while someone drags out a text selection (src/web.js), the page's hover moments sit it out: no previews, gleams,
+   swashes or waves just because the pointer passed over them on the way */
+html.selecting :is(.hi, .name, a.unsw, .now a, .web) { pointer-events: none; }
 
 /* The panel holds the home page; the sky draws its soft card around it (src/sky.js). */
 .panel { position: relative; }
