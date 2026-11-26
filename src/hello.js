@@ -194,38 +194,32 @@ for (const view of document.querySelectorAll('.view')) {
       .then(() => run === returns && !view.hidden && window.__recoil?.());
   }).observe(view, { attributes: true, attributeFilter: ['hidden'] });
 }
-// ---- UNSW's nod ----
-// Between the swash under "shaf" and the coil under "the web", UNSW gets its own small moment: the crest gives a
-// little hop (squash, jump, land, like the letters) and a tiny mustard crayon sparkle winks at its top corner.
-// Settles once the hop has mostly landed, so the coil comes on a beat after.
+// ---- UNSW's shine ----
+// Between the swash under "shaf" and the coil under "the web", UNSW gets its own small moment: a soft slanted band
+// of light glides across the crest, the way light catches a polished badge (like the glint the old Experience logos
+// had). The band is clipped to the shield's own shape (style.css masks it with shield.svg). Settles once the band
+// is most of the way across, so the coil comes on a beat after.
 const unswSlot = document.querySelector('.unsw-slot');
 function unswNod(delay = 0) {
   if (!unswSlot || calm.matches) return Promise.resolve();
-  const NOD = 520;
-  unswSlot.animate([
-    // (the slot sits .5px low at rest, style.css)
-    { transform: 'translateY(.5px)' },
-    { transform: 'translateY(1px) scale(1.12, .84)', offset: .18 },
-    { transform: 'translateY(-3.5px) scale(.92, 1.1)', offset: .48 },
-    { transform: 'translateY(.5px) scale(1.08, .92)', offset: .74 },
-    { transform: 'translateY(.5px)' },
-  ], { duration: NOD, delay, easing: 'cubic-bezier(.3, .6, .4, 1)' });
-  const glint = document.createElement('span');
-  glint.className = 'unsw-glint';
-  glint.setAttribute('aria-hidden', 'true');
-  unswSlot.append(glint);
-  glint.animate([
-    { transform: 'scale(0) rotate(-40deg)', opacity: 0 },
-    { transform: 'scale(1.15) rotate(10deg)', opacity: 1, offset: .4 },
-    { transform: 'scale(.9) rotate(0deg)', opacity: 1, offset: .7 },
-    { transform: 'scale(0) rotate(30deg)', opacity: 0 },
-  ], { duration: 760, delay: delay + NOD * .35, easing: 'cubic-bezier(.3, .8, .4, 1)', fill: 'backwards' })
-    .finished.then(() => glint.remove(), () => glint.remove());
-  return pause(delay + NOD * LANDED + BEAT);
+  const SHINE = 900;
+  const shine = document.createElement('span');
+  shine.className = 'unsw-shine';
+  shine.setAttribute('aria-hidden', 'true');
+  shine.append(document.createElement('span'));
+  unswSlot.append(shine);
+  shine.firstChild.animate([
+    { transform: 'translateX(-140%) skewX(-20deg)', opacity: 0 },
+    { opacity: 1, offset: .2 },
+    { opacity: 1, offset: .75 },
+    { transform: 'translateX(140%) skewX(-20deg)', opacity: 0 },
+  ], { duration: SHINE, delay, easing: 'cubic-bezier(.35, .1, .25, 1)', fill: 'backwards' })
+    .finished.then(() => shine.remove(), () => shine.remove());
+  return pause(delay + SHINE * .7 + BEAT);
 }
 window.__unswNod = unswNod;
 
-// as the swash nears its end, UNSW nods, then the coil draws in under "the web", in the same paragraph (src/web.js
+// as the swash nears its end, UNSW shines, then the coil draws in under "the web", in the same paragraph (src/web.js
 // waits for this), and once that has drawn in, the opening goes on to the bullet points and the CV note
 window.__swashed = Promise.all(opening);
 window.__unswed = opening.length ? window.__swashed.then(() => unswNod()) : window.__swashed;
