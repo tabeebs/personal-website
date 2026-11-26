@@ -301,13 +301,17 @@ a.unsw:focus-visible { outline: 2px solid #2d3a68; outline-offset: 3px; border-r
   /* the slot keeps the letters' height (the shield is a touch taller) and holds the shield plus one word space after it:
      the space before it is the sentence's own, so the shield sits evenly between "at" and the word */
   position: relative; display: block; height: var(--h); width: calc(var(--w) + var(--gap)); transform: translateY(.5px);
-  transform-origin: calc(var(--w) / 2) 100%;   /* its hop in the opening (src/hello.js) squashes from the shield's foot */
+  }
+/* the opening's shine across the crest (src/hello.js): a soft slanted band of light, clipped to the shield's shape */
+.unsw-shine {
+  position: absolute; left: 0; bottom: calc((var(--h) - var(--shield-h)) / 2); width: var(--w); height: var(--shield-h);
+  overflow: hidden; pointer-events: none;
+  -webkit-mask: url(/assets/unsw/shield.svg) center / contain no-repeat; mask: url(/assets/unsw/shield.svg) center / contain no-repeat;
 }
-/* the opening's tiny sparkle at the crest's top corner (src/hello.js): a four-pointed mustard star */
-.unsw-glint {
-  position: absolute; left: calc(var(--w) - 3px); top: -7px; width: 8px; height: 8px; pointer-events: none;
-  background: #dc9f22;
-  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+.unsw-shine > span {
+  position: absolute; top: -20%; bottom: -20%; left: 0; width: 100%;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 20%, rgba(255, 255, 255, .85) 50%, rgba(255, 255, 255, 0) 80%);
+  mix-blend-mode: screen;
 }
 .unsw-slot img {
   position: absolute; left: 0; bottom: calc((var(--h) - var(--shield-h)) / 2); height: var(--shield-h); width: auto;   /* centred on the caps */

@@ -1,6 +1,6 @@
 // The opening sequence, so the page arrives in order instead of all at once: it opens inside a cloud that parts
 // from the greeting outward as the camera pulls back (src/sky.js), the card opens out, "kia ora!" drops in, and
-// only once it has landed does the line under it rise; once that's in place the swash sweeps under "shaf", UNSW nods
+// only once it has landed does the line under it rise; once that's in place the swash sweeps under "shaf", UNSW's crest shines
 // and the coil draws under "the web", and
 // only after that do the three bullet points rise, all at once, then the CV note; the ground surfaces from below.
 // The timeline starts when the sky draws its first frame (src/sky.js calls skyReady), or after a moment anyway.

@@ -95,7 +95,7 @@ if (web) {
 }
 
 // The underline, drawn by hand: a run of little loops, like a phone cord, kept within the words. The light coil
-// is drawn in once the swash under "shaf" has swept in and UNSW has nodded (src/hello.js says when) and this line has risen into
+// is drawn in once the swash under "shaf" has swept in and UNSW's crest has shone (src/hello.js says when) and this line has risen into
 // place, and then stays. Opening "the
 // web" traces a dark coil over it, along the same path; closing it rubs the dark one gently back out, leaving the
 // light one as it was.
