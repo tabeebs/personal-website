@@ -65,7 +65,7 @@ body {
   position: relative;
   z-index: 1;
   width: 100%;
-  max-width: 628px;
+  max-width: 640px;
   margin: 0 auto;
   /* the ground's top rows are open air. The card is centred in the screen above the grass, not the whole screen:
      the grass row sits 72px up from the bottom (6 rows of 12px, src/ground.js), so the top is 72px shorter, and 6px
@@ -273,7 +273,7 @@ html.playing, html.playing * { -webkit-user-select: none; user-select: none; }
 html[data-intro]:not(.intro-go) :is(#content, #ground) { visibility: hidden; }
 html[data-intro]:not(.intro-letters) .hi .ch { opacity: 0; }
 html[data-intro] { overflow: hidden; }   /* nothing on its way in makes the page scroll */
-html.intro-go[data-intro] :is(.panel, .intro .hi ~ p, .cv, #ground) { animation-fill-mode: backwards; }
+html.intro-go[data-intro] :is(.panel, .intro .hi ~ p, .now, .cv, #ground) { animation-fill-mode: backwards; }
 
 @keyframes intro-bloom { from { opacity: 0; scale: .93; filter: blur(10px); } 60% { opacity: 1; } }
 @keyframes intro-rise { from { opacity: 0; translate: 0 10px; filter: blur(5px); } }
@@ -283,34 +283,36 @@ html.intro-go[data-intro] :is(.panel, .intro .hi ~ p, .cv, #ground) { animation-
 .intro-go[data-intro] .panel { animation: intro-bloom 1.3s .35s cubic-bezier(.2, .8, .3, 1); }
 .intro-go[data-intro] .intro .hi + p { animation: intro-rise .7s 1.58s cubic-bezier(.2, .7, .3, 1); }
 /* the next line and the CV note wait for the swash under "shaf" and the coil under "the web" (src/hello.js tells src/intro.js, which adds .intro-welcome) */
-html[data-intro]:not(.intro-welcome) :is(.intro .hi + p ~ p, .cv) { opacity: 0; }
+html[data-intro]:not(.intro-welcome) :is(.intro .hi + p ~ p, .now, .cv) { opacity: 0; }
 .intro-welcome[data-intro] .intro .hi + p ~ p { animation: intro-rise .7s cubic-bezier(.2, .7, .3, 1) backwards; }
+.intro-welcome[data-intro] .now li { animation: intro-rise .7s cubic-bezier(.2, .7, .3, 1) backwards; }
+.intro-welcome[data-intro] .now li { animation-delay: calc(var(--i, 0) * .09s); }
 .intro-welcome[data-intro] .cv { animation: intro-fade .8s .35s ease-out backwards; }
 .intro-go[data-intro] #ground { animation: intro-surface 1.2s 1.1s cubic-bezier(.25, .8, .3, 1); }
 
-/* "UNSW" in the uni's own wordmark (from the official vector logo UNSW's handbook site serves; at 12px tall its caps
-   match Poppins' at 17px), with the shield (the same logo's crest without its motto scroll) always shown in front of it,
-   a little taller than the letters and centred on them. */
+/* "UNSW" in the uni's own wordmark (from the official vector logo UNSW's handbook site serves), with the shield (the
+   same logo's crest without its motto scroll) always shown in front of it; letters and shield stand the same height,
+   14px, both on the baseline, so the word doesn't look smaller than its crest. */
 .intro a.unsw { display: inline-flex; align-items: baseline; white-space: nowrap; text-decoration: none; outline: none; }
 a.unsw:focus-visible { outline: 2px solid #2d3a68; outline-offset: 3px; border-radius: 3px; }
 .unsw img { display: block; user-select: none; -webkit-user-drag: none; }
-.unsw-mark { height: 12px; width: auto; transform: translateY(.5px); }
+.unsw-mark { height: 14px; width: auto; transform: translateY(.5px); }
 .unsw-slot {
-  --h: 12px; --shield-h: 16px; --w: calc(var(--shield-h) * 63.43 / 83.4); --gap: .27em;
-  /* the slot keeps the letters' height (the shield is a touch taller) and holds the shield plus one word space after it:
+  --h: 14px; --shield-h: 14px; --w: calc(var(--shield-h) * 63.43 / 83.4); --gap: .27em;
+  /* the slot keeps the letters' height and holds the shield plus one word space after it:
      the space before it is the sentence's own, so the shield sits evenly between "at" and the word */
   position: relative; display: block; height: var(--h); width: calc(var(--w) + var(--gap)); transform: translateY(.5px);
 }
 .unsw-slot img {
-  position: absolute; left: 0; bottom: calc((var(--h) - var(--shield-h)) / 2); height: var(--shield-h); width: auto;   /* centred on the caps */
+  position: absolute; left: 0; bottom: calc((var(--h) - var(--shield-h)) / 2); height: var(--shield-h); width: auto;
   /* no filter or will-change here: either would put the shield on a layer of its own, rasterized once and then
      resampled at its fractional position, which leaves the fine crest looking soft and pixelated */
 }
 
-/* A peek at UNSW (src/peek.js): hovering the logo hushes the page like "the web" does, and a little window pops up
+/* A peek at a logo's site (src/peek.js, UNSW and Salesforce): hovering the logo hushes the page like "the web" does, and a little window pops up
    above it showing the CSE school page coloured in by crayon and then scrolling itself. The logo stays sharp above the hush. */
-.intro a.unsw { position: relative; }
-.peek-open a.unsw { z-index: 6; }
+.intro a[data-peek] { position: relative; }
+.peek-open a.peeking { z-index: 6; }
 .peek-open .hush { opacity: 1; }
 .peek-open .web { z-index: 4; }   /* "the web" goes quiet behind the hush with everything else */
 .peek {
@@ -326,10 +328,33 @@ a.unsw:focus-visible { outline: 2px solid #2d3a68; outline-offset: 3px; border-r
   transition: opacity .12s, transform .16s ease-in, visibility 0s .16s;
 }
 .peek canvas { display: block; width: 272px; height: 170px; border-radius: 10px; background: #f3f3f3; }
-.peek-open .peek {
+.peek-open .peeking .peek {
   visibility: visible; pointer-events: auto; opacity: 1;
   transform: translateX(calc(-50% + var(--nudge))) translateY(0) scale(1);
   transition: opacity .14s, transform .38s cubic-bezier(.3, 1.45, .5, 1), visibility 0s;
 }
 @media (prefers-reduced-motion: reduce) { .peek, .peek-open .peek { transition: none; } }
 
+
+/* What I'm up to: a short list under the greeting, one line each, verb first, each behind a soft ">", set in a
+   little from the paragraph's edge. */
+.now { list-style: none; margin: 14px 0 0; padding: 0 0 0 14px; font-size: 15px; line-height: 1.5; color: #3d4560; }
+.now li { position: relative; padding-left: 18px; margin: 0 0 5px; }
+.now li:last-child { margin-bottom: 0; }
+.now li::before { content: ">"; position: absolute; left: 0; top: 0; color: #9aa0b2; font-weight: 500; }
+/* Salesforce and Kirby, like Justin Wu's "@Tesla Design Studio": "@" and the name in the organisation's own lettering
+   (Salesforce's wordmark from its logo; Kirby's name in a plain grotesque like its own), on a soft wash of its colour */
+.now a.org { white-space: nowrap; text-decoration: none; outline: none; padding: 1px 6px 2px; border-radius: 5px; transition: background-color .2s; }
+.now a.org:focus-visible { outline: 2px solid #2d3a68; outline-offset: 3px; }
+.now a.org img { display: inline-block; user-select: none; -webkit-user-drag: none; }
+.now .at { font-weight: 600; }
+/* the wordmark's x-height is .551 of its height and its f dips below the line (the baseline sits .768 down), so at 15px
+   tall its x-height matches Poppins' 8.25px at 15px, and it drops 3.5px to put its baseline on the line's */
+.sf .org-name { height: 15px; width: auto; vertical-align: -3.5px; }
+.kirby .org-name { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 15px; font-weight: 400; color: #1d1d1b; }
+.now a.sf { background: #dcefff; }
+.now a.sf .at { color: #0b8fd6; }
+.now a.sf:hover, .now a.sf.peeking { background: #c8e5fd; }
+.now a.kirby { background: #f3e7d3; }
+.now a.kirby .at { color: #a27b44; }
+.now a.kirby:hover, .now a.kirby.peeking { background: #ecdcc0; }
