@@ -451,7 +451,7 @@ a.unsw:focus-visible { outline: 2px solid #2d3a68; outline-offset: 3px; border-r
 /* What I'm up to: a short list under the greeting, one line each, verb first, each behind a soft ">", set in a
    little from the paragraph's edge. */
 .now { list-style: none; margin: 14px 0 0; padding: 0 0 0 14px; font-size: 15px; line-height: 1.5; color: #3d4560; }
-.now li { position: relative; padding-left: 18px; margin: 0 0 5px; }
+.now li { position: relative; padding-left: 18px; margin: 0 0 12px; }   /* room between the lines, so Salesforce and Kirby are easy to tell apart under a pointer or a thumb */
 .now li:last-child { margin-bottom: 0; }
 .now li::before { content: ">"; position: absolute; left: 0; top: 0; color: #9aa0b2; font-weight: 500; }
 /* Salesforce and Kirby, like Justin Wu's "@Tesla Design Studio": "@" and the name in the organisation's own lettering
