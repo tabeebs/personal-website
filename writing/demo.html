@@ -9,9 +9,8 @@
   <link rel="stylesheet" href="/style.css?v=33" />
   <link rel="stylesheet" href="/assets/post/post.css?v=1" />
 </head>
-<!-- A reading page: night behind it (no sky, no meadow). data-art is the drawing at the top, which the demo panel
-     at the bottom right switches; a real piece sets its own. -->
-<body class="piece-page post-page" data-art="arcs">
+<!-- A reading page: night behind it (no sky, no meadow) -->
+<body class="piece-page post-page">
 
   <!-- the contents rail (src/post.js fills it from the piece's h2s and h3s) -->
   <nav class="rail" aria-label="On this page">
@@ -24,14 +23,12 @@
   </nav>
 
   <main class="post">
+    <!-- (narrow screens only: on wide ones the rail carries the way back) -->
     <a class="back post-back" href="/writing">← thoughts</a>
 
     <header class="post-head">
-      <!-- the little drawing that plays once when the page opens (src/post.js) -->
-      <div class="post-art" aria-hidden="true"></div>
       <h1 class="post-title">a placeholder piece about nothing in particular</h1>
       <p class="post-dek">A short line that says what the piece is about, in one breath.</p>
-      <time class="post-date" datetime="2026-11-27">27 November 2026 · 6 min read</time>
     </header>
 
     <!-- on narrow screens the rail can't fit, so the contents fold up here instead -->
@@ -101,33 +98,6 @@
       </ul>
     </section>
   </main>
-
-  <!-- DEMO ONLY: switches between the options below. Delete this <aside> once the choices are made. -->
-  <aside class="demo" aria-label="Demo controls">
-    <button class="demo-toggle" type="button" aria-expanded="true">demo controls</button>
-    <div class="demo-body">
-      <div class="demo-group">
-        <span class="demo-label">opening drawing</span>
-        <div class="demo-seg" data-set="art">
-          <button type="button" data-value="arcs">aot: arcs</button>
-          <button type="button" data-value="plane">closed mouths: plane</button>
-          <button type="button" data-value="bottles">skincare: bottles</button>
-          <button type="button" data-value="house">house</button>
-          <button type="button" data-value="sprout">sprout</button>
-          <button type="button" data-value="cloud">ascii cloud</button>
-          <button type="button" data-value="none">none</button>
-        </div>
-        <button class="demo-action" type="button" data-replay>↻ play it again</button>
-      </div>
-      <div class="demo-group">
-        <span class="demo-label">jump to</span>
-        <div class="demo-seg">
-          <button type="button" data-jump="top">top</button>
-          <button type="button" data-jump="more">the hover list</button>
-        </div>
-      </div>
-    </div>
-  </aside>
 
   <script type="module" src="/build/post.js"></script>
 </body>
