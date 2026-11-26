@@ -53,13 +53,19 @@ if (web) {
     if (performance.now() - t1 > 60) return 0;   // it hasn't moved lately: it's resting
     return Math.hypot(x1 - x0, y1 - y0) / Math.max(1, t1 - t0);
   };
+  // and a pointer dragging out a text selection is highlighting, not reaching for the web: with the button held
+  // down, the words never open, however long it rests there
+  let pressed = false;
+  document.addEventListener('pointerdown', (e) => { if (e.pointerType === 'mouse') pressed = (e.buttons & 1) === 1; }, { capture: true, passive: true });
+  document.addEventListener('pointerup', (e) => { if (e.pointerType === 'mouse') pressed = false; }, { capture: true, passive: true });
   let intent = 0;
   web.addEventListener('pointerenter', (e) => {
     if (e.pointerType !== 'mouse') return;
     clearTimeout(closer);
-    if (open) return;
+    if (open || e.buttons & 1) return;
     clearTimeout(intent);
     intent = setTimeout(function check() {
+      if (pressed) return;
       if (speed() < SLOW) set(true); else intent = setTimeout(check, 40);
     }, PAUSE_MS);
   });
