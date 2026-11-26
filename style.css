@@ -164,7 +164,7 @@ html.playing, html.playing * { -webkit-user-select: none; user-select: none; }
 /* GitHub and LinkedIn moved up into "the web", but the panel (and the sky's card around it) keeps the size it had
    with their two rows here. The home view's lines share that height out evenly instead: "kia ora!", the "shaf"
    paragraph and "CV on request" in the corner sit evenly apart, about 32px from one line's baseline to the next one's capitals. */
-#view-home .hi { margin-bottom: 18px; }
+#view-home .hi { margin-bottom: 28px; }   /* a little more air under the greeting, so the page doesn't feel crowded at the top */
 #view-home .hi + p { margin-bottom: 0; }   /* with the collections' margin, "CV on request" sits as far under the paragraph as the paragraph does under "kia ora!" */
 #view-home .collections { margin-top: 6px; }   /* Poppins sits low in its line box, so the CV note comes up to match */
 .collections { position: relative; min-height: 17px; }
