@@ -187,7 +187,33 @@ for (const view of document.querySelectorAll('.view')) {
     names.forEach((n) => n.sweep(420));
   }).observe(view, { attributes: true, attributeFilter: ['hidden'] });
 }
-// as the swash nears its end, the coil draws in under "the web", in the same paragraph (src/web.js waits for this), and
-// once that has drawn in, the opening goes on to the CV note
+// ---- UNSW's shine ----
+// Between the swash under "shaf" and the coil under "the web", UNSW gets its own small moment: a soft slanted band
+// of light glides across the crest, the way light catches a polished badge (like the glint the old Experience logos
+// had). The band is clipped to the shield's own shape (style.css masks it with shield.svg). Settles once the band
+// is most of the way across, so the coil comes on a beat after.
+const unswSlot = document.querySelector('.unsw-slot');
+function unswNod(delay = 0) {
+  if (!unswSlot || calm.matches) return Promise.resolve();
+  const SHINE = 900;
+  const shine = document.createElement('span');
+  shine.className = 'unsw-shine';
+  shine.setAttribute('aria-hidden', 'true');
+  shine.append(document.createElement('span'));
+  unswSlot.append(shine);
+  shine.firstChild.animate([
+    { transform: 'translateX(-140%) skewX(-20deg)', opacity: 0 },
+    { opacity: 1, offset: .2 },
+    { opacity: 1, offset: .75 },
+    { transform: 'translateX(140%) skewX(-20deg)', opacity: 0 },
+  ], { duration: SHINE, delay, easing: 'cubic-bezier(.35, .1, .25, 1)', fill: 'backwards' })
+    .finished.then(() => shine.remove(), () => shine.remove());
+  return pause(delay + SHINE * .7 + BEAT);
+}
+window.__unswNod = unswNod;
+
+// as the swash nears its end, UNSW shines, then the coil draws in under "the web", in the same paragraph (src/web.js
+// waits for this), and once that has drawn in, the opening goes on to the bullet points and the CV note
 window.__swashed = Promise.all(opening);
-window.__swashed.then(() => window.__coiled).then(() => window.__intro?.next?.());
+window.__unswed = opening.length ? window.__swashed.then(() => unswNod()) : window.__swashed;
+window.__unswed.then(() => window.__coiled).then(() => window.__intro?.next?.());
