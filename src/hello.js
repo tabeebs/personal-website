@@ -190,8 +190,8 @@ for (const view of document.querySelectorAll('.view')) {
 // ---- UNSW's shine ----
 // Between the swash under "shaf" and the coil under "the web", UNSW gets its own small moment: a soft slanted band
 // of light glides across the crest, the way light catches a polished badge (like the glint the old Experience logos
-// had). The band is clipped to the shield's own shape (style.css masks it with shield.svg). Settles once the band
-// is most of the way across, so the coil comes on a beat after.
+// had). The band is clipped to the shield's own shape (style.css masks it with shield.svg). Settles about a third
+// of the way through, so the coil comes in while it's still shining.
 const unswSlot = document.querySelector('.unsw-slot');
 function unswNod(delay = 0) {
   if (!unswSlot || calm.matches) return Promise.resolve();
@@ -208,7 +208,8 @@ function unswNod(delay = 0) {
     { transform: 'translateX(140%) skewX(-20deg)', opacity: 0 },
   ], { duration: SHINE, delay, easing: 'cubic-bezier(.35, .1, .25, 1)', fill: 'backwards' })
     .finished.then(() => shine.remove(), () => shine.remove());
-  return pause(delay + SHINE * .7 + BEAT);
+  // the coil under "the web" starts while the band is still crossing, so there's no lull between them
+  return pause(delay + SHINE * .3);
 }
 window.__unswNod = unswNod;
 
