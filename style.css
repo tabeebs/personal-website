@@ -377,7 +377,6 @@ html.intro-go[data-intro] :is(.panel, .intro .hi ~ p, .now, .cv, #ground) { anim
 html[data-intro]:not(.intro-welcome) :is(.intro .hi + p ~ p, .now, .cv) { opacity: 0; }
 .intro-welcome[data-intro] .intro .hi + p ~ p { animation: intro-rise .7s cubic-bezier(.2, .7, .3, 1) backwards; }
 .intro-welcome[data-intro] .now li { animation: intro-rise .7s cubic-bezier(.2, .7, .3, 1) backwards; }
-.intro-welcome[data-intro] .now li { animation-delay: calc(var(--i, 0) * .09s); }
 .intro-welcome[data-intro] .cv { animation: intro-fade .8s .35s ease-out backwards; }
 .intro-go[data-intro] #ground { animation: intro-surface 1.2s 1.1s cubic-bezier(.25, .8, .3, 1); }
 
@@ -393,6 +392,13 @@ a.unsw:focus-visible { outline: 2px solid #2d3a68; outline-offset: 3px; border-r
   /* the slot keeps the letters' height (the shield is a touch taller) and holds the shield plus one word space after it:
      the space before it is the sentence's own, so the shield sits evenly between "at" and the word */
   position: relative; display: block; height: var(--h); width: calc(var(--w) + var(--gap)); transform: translateY(.5px);
+  transform-origin: calc(var(--w) / 2) 100%;   /* its hop in the opening (src/hello.js) squashes from the shield's foot */
+}
+/* the opening's tiny sparkle at the crest's top corner (src/hello.js): a four-pointed mustard star */
+.unsw-glint {
+  position: absolute; left: calc(var(--w) - 3px); top: -7px; width: 8px; height: 8px; pointer-events: none;
+  background: #dc9f22;
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
 }
 .unsw-slot img {
   position: absolute; left: 0; bottom: calc((var(--h) - var(--shield-h)) / 2); height: var(--shield-h); width: auto;   /* centred on the caps */

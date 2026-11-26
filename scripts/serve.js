@@ -23,8 +23,9 @@ createServer(async (req, res) => {
   const rel = normalize(decodeURIComponent(url.pathname)).replace(/^([/\\])+/, '');
   const path = join(ROOT, rel);
   if ((path !== ROOT && !path.startsWith(ROOT + sep)) || rel.split(sep).includes('node_modules')) { res.writeHead(404).end(); return; }
-  // a real file is served as it is; a path with no file extension is a view of the page; anything else is missing
-  const found = await file(path) ?? await file(join(path, 'index.html')) ?? (extname(rel) ? null : join(ROOT, 'index.html'));
+  // a real file is served as it is, and a page by its name without .html (/writing/aot is writing/aot.html, as on
+  // Cloudflare Pages); any other path with no file extension is a view of the page; anything else is missing
+  const found = await file(path) ?? (extname(rel) ? null : await file(path + '.html')) ?? await file(join(path, 'index.html')) ?? (extname(rel) ? null : join(ROOT, 'index.html'));
   if (!found) { res.writeHead(404, { 'Content-Type': 'text/plain' }).end('not found'); return; }
   res.writeHead(200, { 'Content-Type': TYPES[extname(found)] || 'application/octet-stream', 'Cache-Control': 'no-store' });
   res.end(await readFile(found));

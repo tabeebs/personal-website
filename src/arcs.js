@@ -1,11 +1,11 @@
-// The Attack on Titan arc diagram (writing/attack-on-titan/). Every episode sits along one line, as wide as it
+// The Attack on Titan arc diagram (writing/aot.html, at /writing/aot). Every episode sits along one line, as wide as it
 // is long, grouped by season; each connection is an arc from the moment in one episode to the moment it links
 // to. The farther apart the two moments are, the higher the arc. Hover an arc (or tap it) to read the note,
 // hover an episode to light up everything that touches it, click to pin a note below the chart.
-// Data: writing/attack-on-titan/connections.json (real) and sample-connections.json (made-up filler).
+// Data: assets/aot/connections.json (real) and sample-connections.json (made-up filler).
 // Source for build/arcs.js: rebuild with `npm run build` after editing.
 
-const BASE = '/writing/attack-on-titan/';
+const BASE = '/assets/aot/';
 const NS = 'http://www.w3.org/2000/svg';
 
 // ---- the episodes ----
