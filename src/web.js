@@ -95,7 +95,7 @@ if (web) {
 }
 
 // The underline, drawn by hand: a run of little loops, like a phone cord, kept within the words. The light coil
-// is drawn in once the swash under "shaf" has swept in (src/hello.js says when) and this line has risen into
+// is drawn in once the swash under "shaf" has swept in and UNSW has nodded (src/hello.js says when) and this line has risen into
 // place, and then stays. Opening "the
 // web" traces a dark coil over it, along the same path; closing it rubs the dark one gently back out, leaving the
 // light one as it was.
@@ -134,7 +134,7 @@ if (label) {
   }, () => {});
   // and the opening's next line waits for the coil in turn (src/hello.js): this settles once it's 80% drawn in (its
   // .8s in style.css), a beat later
-  window.__coiled = Promise.all([window.__swashed, document.fonts?.ready])
+  window.__coiled = Promise.all([window.__unswed || window.__swashed, document.fonts?.ready])
     .then(() => Promise.all(label.closest('p').getAnimations().map(landed)))
     .then(() => new Promise((r) => setTimeout(() => { draw(); setTimeout(r, reduced ? 0 : 800 * .8 + 60); }, reduced ? 0 : 60)));
 }

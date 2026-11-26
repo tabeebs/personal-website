@@ -187,7 +187,39 @@ for (const view of document.querySelectorAll('.view')) {
     names.forEach((n) => n.sweep(420));
   }).observe(view, { attributes: true, attributeFilter: ['hidden'] });
 }
-// as the swash nears its end, the coil draws in under "the web", in the same paragraph (src/web.js waits for this), and
-// once that has drawn in, the opening goes on to the CV note
+// ---- UNSW's nod ----
+// Between the swash under "shaf" and the coil under "the web", UNSW gets its own small moment: the crest gives a
+// little hop (squash, jump, land, like the letters) and a tiny mustard crayon sparkle winks at its top corner.
+// Settles once the hop has mostly landed, so the coil comes on a beat after.
+const unswSlot = document.querySelector('.unsw-slot');
+function unswNod(delay = 0) {
+  if (!unswSlot || calm.matches) return Promise.resolve();
+  const NOD = 520;
+  unswSlot.animate([
+    // (the slot sits .5px low at rest, style.css)
+    { transform: 'translateY(.5px)' },
+    { transform: 'translateY(1px) scale(1.12, .84)', offset: .18 },
+    { transform: 'translateY(-3.5px) scale(.92, 1.1)', offset: .48 },
+    { transform: 'translateY(.5px) scale(1.08, .92)', offset: .74 },
+    { transform: 'translateY(.5px)' },
+  ], { duration: NOD, delay, easing: 'cubic-bezier(.3, .6, .4, 1)' });
+  const glint = document.createElement('span');
+  glint.className = 'unsw-glint';
+  glint.setAttribute('aria-hidden', 'true');
+  unswSlot.append(glint);
+  glint.animate([
+    { transform: 'scale(0) rotate(-40deg)', opacity: 0 },
+    { transform: 'scale(1.15) rotate(10deg)', opacity: 1, offset: .4 },
+    { transform: 'scale(.9) rotate(0deg)', opacity: 1, offset: .7 },
+    { transform: 'scale(0) rotate(30deg)', opacity: 0 },
+  ], { duration: 760, delay: delay + NOD * .35, easing: 'cubic-bezier(.3, .8, .4, 1)', fill: 'backwards' })
+    .finished.then(() => glint.remove(), () => glint.remove());
+  return pause(delay + NOD * LANDED + BEAT);
+}
+window.__unswNod = unswNod;
+
+// as the swash nears its end, UNSW nods, then the coil draws in under "the web", in the same paragraph (src/web.js
+// waits for this), and once that has drawn in, the opening goes on to the bullet points and the CV note
 window.__swashed = Promise.all(opening);
-window.__swashed.then(() => window.__coiled).then(() => window.__intro?.next?.());
+window.__unswed = opening.length ? window.__swashed.then(() => unswNod()) : window.__swashed;
+window.__unswed.then(() => window.__coiled).then(() => window.__intro?.next?.());
