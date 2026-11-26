@@ -143,7 +143,7 @@ function draw() {
   for (const { c, x1, x2 } of list) {
     const rx = Math.max(.5, (x2 - x1) / 2), ry = Math.min(arcH - 4, rx * (arcH - 4) / (plotW / 2));
     const d = `M${x1.toFixed(1)} ${y0} A${rx.toFixed(1)} ${ry.toFixed(1)} 0 0 1 ${x2.toFixed(1)} ${y0}`;
-    const colour = state.colour === 'type' ? (meta.types[c.type] || '#2d3a68') : ramp((x2 - x1) / plotW);
+    const colour = state.colour === 'type' ? (meta.types[c.type] || '#b3b0a9') : ramp((x2 - x1) / plotW);
     const p = el('path', { d, stroke: colour, class: `arc${c.sample ? ' sample' : ''}` }, arcsG);
     p.dataset.id = c.id;
     const h = el('path', { d, class: 'hit', tabindex: 0, role: 'button', 'aria-label': `${ep(c.from.ep).label} to ${ep(c.to.ep).label}` }, hitsG);
@@ -204,7 +204,7 @@ function describe(c) {
   return `
     <div class="arc-route"><span>${where(c.from)}</span><span class="arrow">→</span><span>${where(c.to)}</span></div>
     <div class="arc-tags">
-      <span class="tag" style="--tag:${meta.types[c.type] || '#2d3a68'}">${c.type}</span>
+      <span class="tag" style="--tag:${meta.types[c.type] || '#b3b0a9'}">${c.type}</span>
       ${c.characters.map((n) => `<span class="tag char">${n}</span>`).join('')}
       ${c.sample ? '<span class="tag sample">sample</span>' : ''}
     </div>

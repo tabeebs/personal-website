@@ -71,3 +71,25 @@ body.piece-page { display: block; min-height: 0; }
   .arcs { padding: 14px 10px 12px; margin-left: -6px; margin-right: -6px; }
   .piece-h1 { font-size: 28px; }
 }
+
+/* ---- on the night reading page (assets/post/post.css): the figure in night colours, a little wider than the text ---- */
+.post-page .post-body .arcs { --w: max(100%, min(880px, calc(100vw - 32px))); width: var(--w); margin: 28px 0 36px calc((100% - var(--w)) / 2);
+  background: var(--card); box-shadow: 0 0 0 1px var(--rule); color: var(--ink); font-size: 14px; line-height: 1.5; }
+@media (min-width: 1120px) {   /* clear of the contents rail */
+  .post-page .post-body .arcs { --w: max(100%, min(880px, calc(100vw - 2 * 280px))); }
+}
+.post-page .ctl, .post-page .seg button, .post-page .type-key, .post-page .ctl select { color: var(--ink); }
+.post-page .seg button, .post-page .type-key, .post-page .ctl select { background: transparent; border-color: var(--rule); }
+.post-page .ctl select { background: var(--card); }
+.post-page .seg button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--page); }
+.post-page .ep { fill: #3a3c45; }
+.post-page .ep.logged { fill: var(--ink-soft); }
+.post-page .bracket { stroke: #3a3c45; }
+.post-page .part-label { fill: var(--muted); }
+.post-page .arc-tip { background: #23242b; color: var(--ink); box-shadow: 0 0 0 1px var(--rule), 0 12px 28px -10px rgba(0, 0, 0, .6); }
+.post-page .arc-card { background: #1b1c22; color: var(--ink); }
+.post-page .arc-card.has { background: #24221b; }
+.post-page .arc-route { color: var(--heading); }
+.post-page .tag { background: color-mix(in srgb, var(--tag, #b3b0a9) 22%, var(--card)); color: color-mix(in srgb, var(--tag, #b3b0a9) 55%, #fff); }
+.post-page .arc-note { color: var(--ink-soft); }
+.post-page .arc-check { color: #e7a56a; }

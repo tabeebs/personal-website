@@ -7,37 +7,68 @@
   <link rel="icon" type="image/png" href="/favicon.png" />
   <link rel="preload" href="/assets/fonts/poppins-400-latin.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="/style.css?v=33" />
-  <link rel="stylesheet" href="/assets/aot/aot.css?v=2" />
+  <link rel="stylesheet" href="/assets/post/post.css?v=2" />
+  <link rel="stylesheet" href="/assets/aot/aot.css?v=3" />
 </head>
-<body class="piece-page">
-  <main class="piece-main">
-    <a class="back" href="/writing">← thoughts</a>
-    <h1 class="piece-h1" style="margin-bottom: 28px">the interconnectedness of attack on titan</h1>
+<!-- A reading page, on the blog's template (assets/post/post.css, src/post.js): night behind it, the contents rail on
+     the left. The writing goes in the dashed boxes; the headings are only a first guess at its sections. -->
+<body class="piece-page post-page">
 
-    <!-- your writing goes in these. They're empty on purpose. -->
-    <div class="slot">your intro goes here</div>
+  <nav class="rail" aria-label="On this page">
+    <a class="rail-back" href="/writing">back to thoughts</a>
+    <div class="rail-track">
+      <span class="rail-line" aria-hidden="true"></span>
+      <span class="rail-fill" aria-hidden="true"></span>
+      <ol class="rail-list"></ol>
+    </div>
+  </nav>
 
-    <!-- the arc diagram (src/arcs.js) -->
-    <figure class="arcs" id="arcs">
-      <div class="arc-controls">
-        <div class="seg" role="group" aria-label="Colour arcs by">
-          <span class="ctl-label">colour by</span>
-          <button type="button" data-colour="distance" aria-pressed="true">distance</button>
-          <button type="button" data-colour="type" aria-pressed="false">type</button>
+  <main class="post">
+    <!-- (narrow screens only: on wide ones the rail carries the way back) -->
+    <a class="back post-back" href="/writing">back to thoughts</a>
+
+    <header class="post-head">
+      <h1 class="post-title">the interconnectedness of attack on titan</h1>
+      <p class="post-dek">Every callback, parallel and bit of foreshadowing I could find, drawn as arcs across the show.</p>
+    </header>
+
+    <details class="toc-inline">
+      <summary>contents</summary>
+      <ol></ol>
+    </details>
+
+    <article class="post-body">
+      <div class="slot">a short note before you read (the "pre thing"), set apart like a quote</div>
+
+      <h2 id="where-this-came-from">where this came from</h2>
+      <div class="slot">your intro goes here: the Bible cross-references picture, Cate Hall's piece on luck, and why
+        now (season 3)</div>
+
+      <h2 id="the-arcs">the arcs</h2>
+      <!-- the arc diagram (src/arcs.js) -->
+      <figure class="arcs" id="arcs">
+        <div class="arc-controls">
+          <div class="seg" role="group" aria-label="Colour arcs by">
+            <span class="ctl-label">colour by</span>
+            <button type="button" data-colour="distance" aria-pressed="true">distance</button>
+            <button type="button" data-colour="type" aria-pressed="false">type</button>
+          </div>
+          <div class="legend"></div>
+          <label class="ctl"><span class="ctl-label">spoilers</span><select id="upto"></select></label>
+          <label class="ctl sample-toggle"><input type="checkbox" id="samples" /> show sample arcs</label>
         </div>
-        <div class="legend"></div>
-        <label class="ctl"><span class="ctl-label">spoilers</span><select id="upto"></select></label>
-        <label class="ctl sample-toggle"><input type="checkbox" id="samples" /> show sample arcs</label>
-      </div>
-      <div class="chart"></div>
-      <div class="arc-tip" hidden></div>
-      <figcaption class="arc-stats"></figcaption>
-      <div class="arc-card" aria-live="polite"></div>
-    </figure>
+        <div class="chart"></div>
+        <div class="arc-tip" hidden></div>
+        <figcaption class="arc-stats"></figcaption>
+        <div class="arc-card" aria-live="polite"></div>
+      </figure>
 
-    <div class="slot">more writing here, if you want it</div>
+      <h2 id="what-they-show">what they show</h2>
+      <div class="slot">more writing here, if you want it</div>
+    </article>
   </main>
 
   <script type="module" src="/build/arcs.js"></script>
+  <script type="module" src="/build/post.js"></script>
 </body>
 </html>
