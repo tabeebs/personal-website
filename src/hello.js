@@ -184,27 +184,56 @@ for (const view of document.querySelectorAll('.view')) {
   // just as the opening left them
 }
 // ---- UNSW's shine ----
-// Between the swash under "shaf" and the coil under "the web", UNSW gets its own small moment: a soft slanted band
-// of light glides across the crest, the way light catches a polished badge (like the glint the old Experience logos
-// had). The band is clipped to the shield's own shape (style.css masks it with shield.svg). Settles once the band
-// is most of the way across, so the coil comes on a beat after.
+// Between the swash under "shaf" and the coil under "the web", UNSW gets its own small moment: the crest lights up,
+// the way light catches a polished badge. It brightens with a soft warm glow while a bright slanted band glides
+// across it (like the glint the old Experience logos had), clipped to the shield's own shape (style.css masks it
+// with shield.svg), then runs on across the U-N-S-W letters. Settles about a third of the way through, so the
+// coil comes in while it's still shining.
 const unswSlot = document.querySelector('.unsw-slot');
 function unswNod(delay = 0) {
   if (!unswSlot || calm.matches) return Promise.resolve();
-  const SHINE = 900;
+  const SHINE = 1100;
   const shine = document.createElement('span');
   shine.className = 'unsw-shine';
   shine.setAttribute('aria-hidden', 'true');
   shine.append(document.createElement('span'));
   unswSlot.append(shine);
   shine.firstChild.animate([
-    { transform: 'translateX(-140%) skewX(-20deg)', opacity: 0 },
-    { opacity: 1, offset: .2 },
-    { opacity: 1, offset: .75 },
-    { transform: 'translateX(140%) skewX(-20deg)', opacity: 0 },
-  ], { duration: SHINE, delay, easing: 'cubic-bezier(.35, .1, .25, 1)', fill: 'backwards' })
+    { transform: 'translateX(-150%) skewX(-20deg)', opacity: 0 },
+    { opacity: 1, offset: .15 },
+    { opacity: 1, offset: .8 },
+    { transform: 'translateX(150%) skewX(-20deg)', opacity: 0 },
+  ], { duration: SHINE, delay, easing: 'cubic-bezier(.4, .1, .3, 1)', fill: 'backwards' })
     .finished.then(() => shine.remove(), () => shine.remove());
-  return pause(delay + SHINE * .7 + BEAT);
+  // the crest itself brightens and glows while the band crosses (only for the moment: a filter left on it would
+  // soften the fine crest, style.css)
+  unswSlot.querySelector('img')?.animate([
+    { filter: 'brightness(1) drop-shadow(0 0 0 rgba(244, 210, 124, 0))' },
+    { filter: 'brightness(1.3) drop-shadow(0 0 3px rgba(244, 210, 124, .95))', offset: .45 },
+    { filter: 'brightness(1) drop-shadow(0 0 0 rgba(244, 210, 124, 0))' },
+  ], { duration: SHINE, delay, easing: 'ease-in-out' });
+  // and the light runs on across the letters, U to W, as one sweep with the crest's: each letter catches it in
+  // turn (the band is clipped to the lettering, style.css masks it with wordmark.svg)
+  const mark = unswSlot.parentElement?.querySelector('.unsw-mark');
+  if (mark) {
+    const gleam = document.createElement('span');
+    gleam.className = 'unsw-gleam';
+    gleam.setAttribute('aria-hidden', 'true');
+    Object.assign(gleam.style, { left: `${mark.offsetLeft}px`, top: `${mark.offsetTop}px`, width: `${mark.offsetWidth}px`, height: `${mark.offsetHeight}px` });
+    gleam.append(document.createElement('span'));
+    mark.after(gleam);
+    const w = mark.offsetWidth, band = w * .4;
+    gleam.firstChild.style.width = `${band}px`;
+    gleam.firstChild.animate([
+      { transform: `translateX(${-band * 1.3}px) skewX(-20deg)`, opacity: 0 },
+      { opacity: 1, offset: .12 },
+      { opacity: 1, offset: .85 },
+      { transform: `translateX(${w + band * .3}px) skewX(-20deg)`, opacity: 0 },
+    ], { duration: 900, delay: delay + SHINE * .42, easing: 'cubic-bezier(.45, .1, .35, 1)', fill: 'backwards' })
+      .finished.then(() => gleam.remove(), () => gleam.remove());
+  }
+  // the coil under "the web" starts while the band is still crossing, so there's no lull between them
+  return pause(delay + SHINE * .3);
 }
 window.__unswNod = unswNod;
 

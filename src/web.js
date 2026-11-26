@@ -1,4 +1,4 @@
-// "the web": hovering (or focusing, or tapping) the words opens them. The rest of the page goes quiet behind a
+// "the web": resting the pointer on the words (or focusing, or tapping them) opens them. The rest of the page goes quiet behind a
 // blur, and my profiles pop up out of the words, from the middle outwards. Like a dock, their sizes follow the pointer
 // as it moves: the one under it swells and says its name, and the others shrink back.
 // Source for build/web.js: rebuild with `npm run build` after editing.
@@ -37,8 +37,37 @@ if (web) {
   // leaving closes after a moment, so a pointer crossing the small gap to the icons doesn't drop them
   const later = () => { clearTimeout(closer); closer = setTimeout(() => set(false), 160); };
 
-  web.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') set(true); });
-  web.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') later(); });
+  // Waiting for a pause: a pointer on its way somewhere else (the tabs above, when there are tabs) often passes
+  // over the words. It opens only once the pointer has been on the words a moment and is moving slowly, the way
+  // someone who means it does; a pointer just passing over never slows down there.
+  const PAUSE_MS = 180, SLOW = .3;   // how long it waits first, and the speed (px per ms) that counts as slow
+  const trail = [];   // the pointer's last few positions, for its speed
+  document.addEventListener('pointermove', (e) => {
+    if (e.pointerType !== 'mouse') return;
+    trail.push([e.clientX, e.clientY, e.timeStamp]);
+    while (trail.length > 2 && e.timeStamp - trail[0][2] > 80) trail.shift();
+  }, { passive: true });
+  const speed = () => {
+    if (trail.length < 2) return 0;
+    const [x0, y0, t0] = trail[0], [x1, y1, t1] = trail.at(-1);
+    if (performance.now() - t1 > 60) return 0;   // it hasn't moved lately: it's resting
+    return Math.hypot(x1 - x0, y1 - y0) / Math.max(1, t1 - t0);
+  };
+  let intent = 0;
+  web.addEventListener('pointerenter', (e) => {
+    if (e.pointerType !== 'mouse') return;
+    clearTimeout(closer);
+    if (open) return;
+    clearTimeout(intent);
+    intent = setTimeout(function check() {
+      if (speed() < SLOW) set(true); else intent = setTimeout(check, 40);
+    }, PAUSE_MS);
+  });
+  web.addEventListener('pointerleave', (e) => {
+    if (e.pointerType !== 'mouse') return;
+    clearTimeout(intent);
+    later();
+  });
   web.addEventListener('focusin', () => set(true));
   web.addEventListener('focusout', (e) => { if (!web.contains(e.relatedTarget)) later(); });
   // touch has no hover: a tap on the words toggles them, and a tap anywhere else closes them. (A tap or a press
