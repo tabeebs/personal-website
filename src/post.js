@@ -118,7 +118,7 @@ function drawArt(kind) {
   for (const [p, at] of d.washes || []) {
     const w = document.createElementNS(SVG, 'path');
     w.setAttribute('d', p); w.setAttribute('class', 'wash');
-    w.setAttribute('fill', 'var(--accent)'); w.setAttribute('fill-opacity', '.14');
+    w.setAttribute('fill', 'currentColor'); w.setAttribute('fill-opacity', '.08');
     w.style.setProperty('--at', `${at}s`);
     svg.append(w);
   }
@@ -132,7 +132,7 @@ function drawArt(kind) {
   for (const [cx, cy, r, at] of d.pops || []) {
     const c = document.createElementNS(SVG, 'circle');
     c.setAttribute('cx', cx); c.setAttribute('cy', cy); c.setAttribute('r', r);
-    c.setAttribute('class', 'pop'); c.setAttribute('fill', 'var(--accent)');
+    c.setAttribute('class', 'pop'); c.setAttribute('fill', 'var(--second)');
     c.style.setProperty('--at', `${at}s`);
     svg.append(c);
   }
@@ -175,69 +175,86 @@ if (!heads.length) { rail?.remove(); document.querySelector('.toc-inline')?.remo
 let centres = [];
 let active = -2;
 
-// where each marker sits down the rail, so the line runs from the first to the last and the orange can stop on any
+// where each marker sits down the rail, so the line runs from the first to the last
 function layout() {
   if (!track || !rail || getComputedStyle(rail).display === 'none') return;
   centres = items.map(li => { const m = li.querySelector('.mark'); return m.offsetTop + m.offsetHeight / 2 + li.offsetTop; });
   if (!centres.length) return;
   track.style.setProperty('--top', `${centres[0] + list.offsetTop}px`);
   track.style.setProperty('--len', `${centres.at(-1) - centres[0]}px`);
-  paint(active, true);
 }
 
-function paint(i, quiet) {
+function setActive(i) {
+  if (i === active) return;
+  active = i;
   items.forEach((li, j) => { li.classList.toggle('active', j === i); li.classList.toggle('passed', j < i); });
-  if (track && centres.length) track.style.setProperty('--fill', `${i < 0 ? 0 : centres[i] - centres[0]}px`);
   // keep the section you're in within view when the rail has more sections than room
   const li = items[i];
-  if (!quiet && li && track) {
+  if (li && track) {
     const top = li.offsetTop, bot = top + li.offsetHeight;
     if (top < track.scrollTop + 20 || bot > track.scrollTop + track.clientHeight - 20)
       track.scrollTo({ top: top - track.clientHeight / 2, behavior: 'smooth' });
   }
 }
 
-function setActive(i) {
-  if (i === active) return;
-  active = i;
-  paint(i);
-}
-
-// the section you're reading is the last one whose heading has passed a line a quarter of the way down the screen;
-// at the very bottom of the page it's the last section, however short
-let lockUntil = 0;
-function onScroll() {
-  if (performance.now() < lockUntil) return;
-  const line = innerHeight * .25;
+// Which section you're in: the last heading that has come up to just under the top of the screen (where a click
+// lands it). The line doesn't stop at markers: between two headings it fills in step with how far you've read
+// through that section, so it creeps down as you scroll rather than jumping from marker to marker.
+const LINE = 80;   // px from the top: a little under where a clicked heading comes to rest (its 28px scroll margin)
+let held = -1;     // a section you clicked stays the one you're in until you scroll yourself
+function reading() {
+  if (held >= 0) return { i: held, at: centres[held] ?? 0 };
   let i = -1;
-  for (const [j, h] of heads.entries()) if (h.getBoundingClientRect().top <= line) i = j;
-  if (innerHeight + scrollY >= document.documentElement.scrollHeight - 4 && heads.length) i = heads.length - 1;
-  setActive(i);
+  for (const [j, h] of heads.entries()) if (h.getBoundingClientRect().top <= LINE) i = j;
+  if (i < 0 || !centres.length) return { i, at: centres[0] ?? 0 };
+  const top = heads[i].getBoundingClientRect().top;
+  const next = heads[i + 1]?.getBoundingClientRect().top
+    ?? document.documentElement.scrollHeight - scrollY;   // the last section runs to the end of the page
+  const k = Math.min(1, Math.max(0, (LINE - top) / Math.max(1, next - top)));
+  const to = centres[i + 1] ?? centres[i];
+  return { i, at: centres[i] + (to - centres[i]) * k };
 }
-let ticking = false;
-addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(() => { ticking = false; onScroll(); }); } }, { passive: true });
 
-// clicking a section: the orange glides there straight away, and the page follows
+// the fill eases towards where you are, every frame, so it glides after you instead of snapping
+let shown = 0, last = 0, running = false;
+function frame(now) {
+  const dt = Math.min(64, now - (last || now)); last = now;
+  const { i, at } = reading();
+  setActive(i);
+  const target = Math.max(0, at - (centres[0] ?? 0));
+  const ease = 1 - Math.exp(-dt / (held >= 0 ? 170 : 130));
+  shown += (target - shown) * ease;
+  if (Math.abs(target - shown) < .2) shown = target;
+  track?.style.setProperty('--fill', `${shown.toFixed(2)}px`);
+  if (shown !== target) requestAnimationFrame(frame); else { running = false; last = 0; }
+}
+const kick = () => { if (!running) { running = true; requestAnimationFrame(frame); } };
+addEventListener('scroll', kick, { passive: true });
+
+// clicking a section: the line glides there and that section stays the one you're in (even a short one near the end,
+// which can't scroll all the way to the top) until you scroll yourself
 function go(e) {
   const a = e.target.closest('a[href^="#"]');
   if (!a) return;
   const i = heads.findIndex(h => `#${h.id}` === a.getAttribute('href'));
   if (i < 0) return;
   e.preventDefault();
-  setActive(i);
-  lockUntil = performance.now() + 1200;
-  const release = () => { lockUntil = 0; onScroll(); };
-  addEventListener('scrollend', release, { once: true });
+  held = i;
+  kick();
   heads[i].scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   history.replaceState(null, '', `#${heads[i].id}`);
 }
 list?.addEventListener('click', go);
 inline?.addEventListener('click', go);
+const letGo = () => { if (held >= 0) { held = -1; kick(); } };
+for (const ev of ['wheel', 'touchmove']) addEventListener(ev, letGo, { passive: true });
+addEventListener('keydown', (e) => { if (/^(Arrow|Page|Home|End| )/.test(e.key) || e.key === ' ') letGo(); });
+addEventListener('pointerdown', (e) => { if (e.target === document.documentElement) letGo(); });   // the scrollbar
 
-addEventListener('resize', layout);
-document.fonts?.ready.then(layout);
-layout();
-onScroll();
+const relayout = () => { layout(); kick(); };
+addEventListener('resize', relayout);
+document.fonts?.ready.then(relayout);
+relayout();
 
 /* ---------------- DEMO ONLY: the panel's switches ---------------- */
 
@@ -262,7 +279,6 @@ if (demo) {
       body.dataset[key] = b.dataset.value;
       sync();
       if (key === 'art') drawArt(b.dataset.value);
-      if (key === 'rail') requestAnimationFrame(() => { layout(); onScroll(); });
       return;
     }
     if (b.hasAttribute('data-replay')) {

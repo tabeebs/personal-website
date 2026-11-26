@@ -2,19 +2,11 @@
    plays once at the top, a contents rail down the left whose orange line follows you through the piece, and a list
    of other pieces that brings the one you point at forward. */
 
-/* ---- colours: each background brings its own ink ---- */
+/* ---- colours: always night, and no orange: the accent is a soft warm white ---- */
 body.post-page {
-  --page: #f4efe4; --ink: #2b2a33; --ink-soft: #55535e; --muted: #8b877d; --rule: #ddd5c4;
-  --accent: #e2742f; --heading: #2d3a68; --card: #fffdf8;
-  background: var(--page); color: var(--ink);
-  transition: background-color .35s, color .35s;
-}
-body.post-page[data-bg="white"] { --page: #f9f9f9; --ink: #26262b; --ink-soft: #55555c; --muted: #8a8a8a; --rule: #e4e4e4; --card: #fff; }
-body.post-page[data-bg="mint"]  { --page: #e6f4ee; --ink: #24322d; --ink-soft: #4b5d56; --muted: #7d918a; --rule: #c9e1d6; --card: #f6fbf8; }
-body.post-page[data-bg="night"] { --page: #16171c; --ink: #e6e4df; --ink-soft: #b3b0a9; --muted: #7f7c76; --rule: #2c2d34;
-  --accent: #f08a45; --heading: #f1efe9; --card: #1e1f25; }
-@media (prefers-color-scheme: dark) {
-  body.post-page:not([data-bg]) { --page: #16171c; --ink: #e6e4df; --ink-soft: #b3b0a9; --muted: #7f7c76; --rule: #2c2d34; --heading: #f1efe9; }
+  --page: #16171c; --ink: #e6e4df; --ink-soft: #b3b0a9; --muted: #7f7c76; --rule: #2c2d34;
+  --accent: #d8d4cb; --second: #6f6c66; --heading: #f1efe9; --card: #1e1f25;
+  background: var(--page); color: var(--ink); color-scheme: dark;
 }
 
 /* ---- the column ---- */
@@ -29,9 +21,6 @@ body.post-page[data-bg="night"] { --page: #16171c; --ink: #e6e4df; --ink-soft: #
 .post-date { display: block; font-size: 13px; color: var(--muted); }
 
 .post-body { font-size: 16.5px; line-height: 1.75; color: var(--ink); }
-.post-page[data-font="serif"] .post-body,
-.post-page[data-font="serif"] .post-dek { font-family: "Iowan Old Style", "Palatino Linotype", Charter, "Book Antiqua", Georgia, serif; }
-.post-page[data-font="serif"] .post-body { font-size: 18.5px; line-height: 1.7; }
 .post-body p { margin: 0 0 1.15em; }
 .post-body h2, .post-body h3 { scroll-margin-top: 28px; color: var(--heading); font-family: "Bricolage Grotesque", Poppins, sans-serif;
   letter-spacing: -.025em; }
@@ -46,7 +35,7 @@ body.post-page[data-bg="night"] { --page: #16171c; --ink: #e6e4df; --ink-soft: #
 .post-art svg { display: block; height: 100%; width: auto; max-width: 100%; overflow: visible; }
 .post-art .ink { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round;
   stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw var(--dur, .5s) cubic-bezier(.55, .1, .35, 1) var(--at, 0s) forwards; }
-.post-art .ink.accent { stroke: var(--accent); }
+.post-art .ink.accent { stroke: var(--second); }
 .post-art .ink.thin { stroke-width: 1.6; }
 /* the skincare drop falls into place as it's drawn */
 .post-art .ink.fall { animation: draw var(--dur, .5s) cubic-bezier(.55, .1, .35, 1) var(--at, 0s) forwards,
@@ -63,7 +52,7 @@ body.post-page[data-bg="night"] { --page: #16171c; --ink: #e6e4df; --ink-soft: #
 .post-art pre { margin: 0; padding-top: 18px; font: 600 16px/1.1 ui-monospace, "Cascadia Mono", Consolas, Menlo, monospace; color: var(--heading);
   animation: settle 1.6s ease-out .9s both; }
 .post-art pre span { opacity: 0; display: inline-block; transform: translateY(4px); animation: glyph .35s ease-out var(--at) forwards; }
-.post-art pre span.a { color: var(--accent); }
+.post-art pre span.a { color: var(--second); }
 @keyframes glyph { to { opacity: 1; transform: none; } }
 @keyframes settle { from { transform: translateX(-4px); } to { transform: none; } }
 
@@ -77,7 +66,7 @@ body.post-page[data-bg="night"] { --page: #16171c; --ink: #e6e4df; --ink-soft: #
 /* the line itself, and the orange that fills it down to where you are */
 .rail-line, .rail-fill { position: absolute; left: 6px; top: var(--top, 10px); width: 1.6px; border-radius: 2px; }
 .rail-line { height: var(--len, 0px); background: var(--rule); }
-.rail-fill { height: var(--fill, 0px); background: var(--accent); transition: height .55s cubic-bezier(.3, 1.15, .45, 1); }
+.rail-fill { height: var(--fill, 0px); background: var(--accent); will-change: height; }   /* eased by src/post.js, every frame */
 .rail-list { position: relative; list-style: none; margin: 0; padding: 0; }
 .rail-list li { margin: 0; }
 .rail-list a { position: relative; display: flex; align-items: center; min-height: 26px; padding: 3px 6px 3px 22px; border-radius: 6px;
@@ -86,7 +75,7 @@ body.post-page[data-bg="night"] { --page: #16171c; --ink: #e6e4df; --ink-soft: #
 /* each section's marker: a small rough square, hollow until you reach it */
 .rail-list .mark { position: absolute; left: 2px; top: 50%; width: 9px; height: 9px; margin-top: -4.5px; border: 1.6px solid var(--rule);
   border-radius: 2.5px; background: var(--page); transform: rotate(-4deg);
-  transition: border-color .3s, background-color .3s, transform .4s cubic-bezier(.3, 1.8, .5, 1); }
+  transition: border-color .45s ease-out, background-color .45s ease-out, transform .5s cubic-bezier(.3, 1.5, .5, 1); }
 .rail-list li.sub .mark { left: 3px; width: 7px; height: 7px; margin-top: -3.5px; border-width: 1.4px; }
 .rail-list li.passed .mark { border-color: var(--accent); }
 .rail-list li.active .mark { border-color: var(--accent); background: var(--accent); transform: rotate(6deg) scale(1.15); }
@@ -94,17 +83,13 @@ body.post-page[data-bg="night"] { --page: #16171c; --ink: #e6e4df; --ink-soft: #
 .rail-list li.active .label { color: var(--ink); }
 .rail-list a:hover .label { color: var(--ink); }
 /* names on hover: only the section you're in shows its name until you point at the rail */
-.post-page[data-rail="hover"] .rail-list li.active .label,
-.post-page[data-rail="hover"] .rail:hover .label,
-.post-page[data-rail="hover"] .rail:focus-within .label,
-.post-page[data-rail="always"] .rail-list .label { opacity: 1; translate: 0 0; }
-.post-page[data-rail="hover"] .rail:hover li:not(.active) .label { transition-delay: calc(var(--i, 0) * 18ms); }
+.rail-list li.active .label, .rail:hover .label, .rail:focus-within .label { opacity: 1; translate: 0 0; }
+.rail:hover li:not(.active) .label { transition-delay: calc(var(--i, 0) * 18ms); }
 .rail-list a:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
 @media (min-width: 1120px) {
-  .post-page:not([data-rail="off"]) .rail { display: flex; }
-  .post-page:not([data-rail="off"]) .post-back,
-  .post-page:not([data-rail="off"]) .toc-inline { display: none; }
+  .rail { display: flex; }
+  .post-back, .toc-inline { display: none; }
 }
 
 /* ---- the contents, folded up (narrow screens, or with the rail off) ---- */
@@ -158,5 +143,5 @@ body.post-page[data-bg="night"] { --page: #16171c; --ink: #e6e4df; --ink-soft: #
 }
 @media (prefers-reduced-motion: reduce) {
   .post-art .ink, .post-art .wash, .post-art .pop, .post-art pre, .post-art pre span { animation-duration: 1ms; animation-delay: 0s; }
-  .rail-fill, .rail-list .mark, .rail-list .label, .post-list a { transition: none; }
+  .rail-list .mark, .rail-list .label, .post-list a { transition: none; }
 }
