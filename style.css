@@ -110,6 +110,9 @@ html.playing, html.playing * { -webkit-user-select: none; user-select: none; }
 .pieces a { display: inline-flex; align-items: baseline; gap: 10px; text-decoration: none; color: #2d3a68; font-weight: 600; }
 .pieces a:hover .piece-title, .pieces a:focus-visible .piece-title { text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
 .pieces .piece-meta { font-size: 12.5px; font-weight: 400; color: var(--muted); }
+/* point at one piece and the others fade back, so the one you're about to open stands out */
+.pieces a { transition: opacity .2s ease-out; }
+.pieces:has(a:hover) a:not(:hover), .pieces:has(a:focus-visible) a:not(:focus-visible) { opacity: .32; }
 
 /* Frosted glass tabs, top right of the panel. A frosted track; the selected tab sits under a thick clear lens
    that refracts what's beneath its rim (src/tabs.js draws the refraction map; Chromium bends, other browsers

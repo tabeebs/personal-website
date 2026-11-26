@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>tabeebs · a placeholder piece</title>
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <link rel="preload" href="/assets/fonts/poppins-400-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="/style.css?v=33" />
+  <link rel="stylesheet" href="/assets/post/post.css?v=1" />
+</head>
+<!-- A reading page: one flat colour behind it (no sky, no meadow). data-bg / data-art / data-rail / data-font are
+     what the demo panel at the bottom right switches; a real piece just sets the ones it wants. -->
+<body class="piece-page post-page" data-bg="paper" data-art="house" data-rail="hover" data-font="sans">
+
+  <!-- the contents rail (src/post.js fills it from the piece's h2s and h3s) -->
+  <nav class="rail" aria-label="On this page">
+    <a class="rail-back" href="/writing">← thoughts</a>
+    <div class="rail-track">
+      <span class="rail-line" aria-hidden="true"></span>
+      <span class="rail-fill" aria-hidden="true"></span>
+      <ol class="rail-list"></ol>
+    </div>
+  </nav>
+
+  <main class="post">
+    <a class="back post-back" href="/writing">← thoughts</a>
+
+    <header class="post-head">
+      <!-- the little drawing that plays once when the page opens (src/post.js) -->
+      <div class="post-art" aria-hidden="true"></div>
+      <h1 class="post-title">a placeholder piece about nothing in particular</h1>
+      <p class="post-dek">A short line that says what the piece is about, in one breath.</p>
+      <time class="post-date" datetime="2026-11-27">27 November 2026 · 6 min read</time>
+    </header>
+
+    <!-- on narrow screens the rail can't fit, so the contents fold up here instead -->
+    <details class="toc-inline">
+      <summary>contents</summary>
+      <ol></ol>
+    </details>
+
+    <article class="post-body">
+      <p>This is placeholder text, standing in for the opening of a piece. It's here so the page has the rhythm of
+        real writing: a few lines, a pause, then the next thought. Nothing here means anything yet.</p>
+      <p>A second paragraph, a little longer than the first, so you can see how body text sits against the
+        background colour, how wide the column feels, and how far apart the paragraphs are. Swap the colour and the
+        font from the panel in the corner and read it again.</p>
+
+      <h2 id="where-it-starts">where it starts</h2>
+      <p>Every section begins with a heading like the one above. The rail on the left picks each one up on its own,
+        so a piece only has to be written with headings to get the contents for free.</p>
+      <p>Scroll slowly and watch the rail: the orange line follows you down, and the marker for the section you're
+        in fills in. Hover the rail to see every section's name; click one and the line glides there with you.</p>
+
+      <h2 id="the-first-idea">the first idea</h2>
+      <p>Placeholder for an idea worth a section of its own. It can run for a few paragraphs before the next heading
+        comes along, and the rail doesn't mind how long a section is.</p>
+      <blockquote>A pulled-out line sits here, set apart from the rest with a thin accent bar, for the one sentence
+        you'd want someone to remember.</blockquote>
+      <p>And then the writing carries on as before, with another paragraph that exists mostly to take up room and
+        make the page long enough to scroll through properly.</p>
+
+      <h3 id="a-smaller-thought">a smaller thought</h3>
+      <p>Smaller headings (h3s) show up in the rail too, tucked in a step, so a long section can be broken up
+        without the rail getting crowded.</p>
+
+      <h3 id="and-another">and another</h3>
+      <p>One more small section, so the indent has company. A real piece might have none of these, or lots.</p>
+
+      <h2 id="something-in-the-middle">something in the middle</h2>
+      <div class="slot">a figure, a diagram or an image could sit here</div>
+      <p>Placeholder text again, after the figure. Long pieces need room to breathe around anything that isn't
+        words, so the figure gets the same column as the text and a bit more space above and below.</p>
+      <p>Another paragraph, for length. The point of all this is to feel how the page reads, not what it says, so
+        read it the way you'd read something you actually cared about, and notice what gets in the way.</p>
+
+      <h2 id="two-sides">two sides of it</h2>
+      <p>A section with two small parts under it, to show how a structured piece looks in the rail.</p>
+      <h3 id="one-way">one way to see it</h3>
+      <p>The first side, in a sentence or two of placeholder text. Then a second sentence, to make it a paragraph.</p>
+      <h3 id="the-other-way">the other way</h3>
+      <p>The second side, also placeholder. If this were real, this is where the piece would turn.</p>
+
+      <h2 id="where-it-ends">where it ends</h2>
+      <p>The last section. When you reach the bottom of the page, the rail's line runs all the way down, so you can
+        tell at a glance that you've finished.</p>
+      <p>A closing line, short on purpose.</p>
+    </article>
+
+    <!-- the hover focus list: point at one piece and the rest fade back (same rule as the Writing tab's list) -->
+    <section class="more">
+      <h2 class="more-head">more thoughts</h2>
+      <ul class="post-list">
+        <li><a href="/writing/demo"><span class="t">a placeholder piece about nothing in particular</span><span class="d">Nov 2026</span></a></li>
+        <li><a href="/writing/aot"><span class="t">the interconnectedness of attack on titan</span><span class="d">in progress</span></a></li>
+        <li><a href="#" data-dead><span class="t">notes from a first semester</span><span class="d">Oct 2026</span></a></li>
+        <li><a href="#" data-dead><span class="t">on making small things well</span><span class="d">Sep 2026</span></a></li>
+        <li><a href="#" data-dead><span class="t">what the meadow taught me about canvas</span><span class="d">Aug 2026</span></a></li>
+        <li><a href="#" data-dead><span class="t">a list of things i'd tell myself at sixteen</span><span class="d">Jul 2026</span></a></li>
+      </ul>
+    </section>
+  </main>
+
+  <!-- DEMO ONLY: switches between the options below. Delete this <aside> once the choices are made. -->
+  <aside class="demo" aria-label="Demo controls">
+    <button class="demo-toggle" type="button" aria-expanded="true">demo controls</button>
+    <div class="demo-body">
+      <div class="demo-group">
+        <span class="demo-label">opening drawing</span>
+        <div class="demo-seg" data-set="art">
+          <button type="button" data-value="house">house</button>
+          <button type="button" data-value="sprout">sprout</button>
+          <button type="button" data-value="cloud">ascii cloud</button>
+          <button type="button" data-value="none">none</button>
+        </div>
+        <button class="demo-action" type="button" data-replay>↻ play it again</button>
+      </div>
+      <div class="demo-group">
+        <span class="demo-label">background</span>
+        <div class="demo-seg swatches" data-set="bg">
+          <button type="button" data-value="paper" title="paper"><i style="background:#f4efe4"></i>paper</button>
+          <button type="button" data-value="white" title="white"><i style="background:#f9f9f9"></i>white</button>
+          <button type="button" data-value="mint" title="mint"><i style="background:#e6f4ee"></i>mint</button>
+          <button type="button" data-value="night" title="night"><i style="background:#16171c"></i>night</button>
+        </div>
+      </div>
+      <div class="demo-group">
+        <span class="demo-label">contents rail</span>
+        <div class="demo-seg" data-set="rail">
+          <button type="button" data-value="hover">names on hover</button>
+          <button type="button" data-value="always">names always</button>
+          <button type="button" data-value="off">off</button>
+        </div>
+      </div>
+      <div class="demo-group">
+        <span class="demo-label">body text</span>
+        <div class="demo-seg" data-set="font">
+          <button type="button" data-value="sans">poppins</button>
+          <button type="button" data-value="serif">serif</button>
+        </div>
+      </div>
+      <div class="demo-group">
+        <span class="demo-label">jump to</span>
+        <div class="demo-seg">
+          <button type="button" data-jump="top">top</button>
+          <button type="button" data-jump="more">the hover list</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <script type="module" src="/build/post.js"></script>
+</body>
+</html>
