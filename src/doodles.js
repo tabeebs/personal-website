@@ -407,7 +407,8 @@ function doodle(el) {
   const row = (el.dataset.hover ? el.closest(el.dataset.hover) : el.closest('li, button')) || el;   // what brings it alive
   const on = () => { target = 1; wake(); };
   const off = () => { target = 0; wake(); };
-  row.addEventListener('pointerenter', on);
+  // (not while the mouse button is held: that's someone dragging out a text selection across the page)
+  row.addEventListener('pointerenter', (e) => { if (!(e.pointerType === 'mouse' && e.buttons & 1)) on(); });
   row.addEventListener('pointerleave', off);
   row.addEventListener('focusin', on);
   row.addEventListener('focusout', off);

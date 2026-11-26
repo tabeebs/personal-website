@@ -145,7 +145,9 @@ function swash(el) {
   new ResizeObserver(() => { size(); paint(); }).observe(cv);
   new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible) wake(); }).observe(el);
   size();
-  return { el, sweep };
+  // already there, no sweep: for coming back to a view whose opening never played (the page opened on another tab)
+  function settle() { if (sweeping || reveal >= 1) return; reveal = 1; paint(); }
+  return { el, sweep, settle };
 }
 
 // ---- wiring ----
@@ -181,7 +183,10 @@ for (const view of document.querySelectorAll('.view')) {
       .then(() => Promise.all(names.map((n) => n.sweep())));
   }));
   // coming back to a view (from Writing, say) replays nothing: the swash, UNSW and the coil under "the web" stay
-  // just as the opening left them
+  // just as the opening left them. If the page opened on another tab, so this view's opening never played, the
+  // swash is simply there, already drawn, like the coil.
+  new MutationObserver(() => { if (!view.hidden) names.forEach((n) => n.settle()); })
+    .observe(view, { attributes: true, attributeFilter: ['hidden'] });
 }
 // ---- UNSW's shine ----
 // Between the swash under "shaf" and the coil under "the web", UNSW gets its own small moment: the crest lights up,
