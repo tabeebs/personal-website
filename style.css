@@ -122,7 +122,7 @@ html.selecting :is(.hi, .name, a.unsw, .now a, .web) { pointer-events: none; }
    that refracts what's beneath its rim (src/tabs.js draws the refraction map; Chromium bends, other browsers
    blur). The lens slides, squeezes and wobbles between tabs, and can be dragged. */
 .tabs {
-  position: absolute; z-index: 2; top: -7px; right: -6px;   /* centred on the greeting's line */
+  position: absolute; z-index: 2; top: -10px; right: -6px;   /* a touch above the greeting's middle */
   display: flex; gap: 10px; padding: 4px; border-radius: 999px;
   background: rgba(255, 255, 255, .5);
   -webkit-backdrop-filter: blur(14px) saturate(1.6); backdrop-filter: blur(14px) saturate(1.6);
@@ -461,19 +461,16 @@ a.unsw:focus-visible { outline: 2px solid #2d3a68; outline-offset: 3px; border-r
 .now li { position: relative; padding-left: 18px; margin: 0 0 15px; }   /* room between the lines, so Salesforce and Kirby are easy to tell apart under a pointer or a thumb */
 .now li:last-child { margin-bottom: 0; }
 .now li::before { content: ">"; position: absolute; left: 0; top: 0; color: #9aa0b2; font-weight: 500; }
-/* Salesforce and Kirby, like Justin Wu's "@Tesla Design Studio": "@" and the name in the organisation's own lettering
-   (Salesforce's wordmark from its logo; Kirby's name in a plain grotesque like its own), on a soft wash of its colour */
+/* Salesforce and Kirby: the name in the organisation's own lettering (Salesforce's wordmark from its logo; Kirby's name
+   in a plain grotesque like its own), on a soft wash of its colour. The "@" before each is plain text, like the line. */
 .now a.org { white-space: nowrap; text-decoration: none; outline: none; padding: 1px 6px 2px; border-radius: 5px; transition: background-color .2s; }
 .now a.org:focus-visible { outline: 2px solid #2d3a68; outline-offset: 3px; }
 .now a.org img { display: inline-block; -webkit-user-drag: none; }   /* selectable, like Kirby's name */
-.now .at { font-weight: 600; }
 /* the wordmark's x-height is .551 of its height and its f dips below the line (the baseline sits .768 down), so at 15px
    tall its x-height matches Poppins' 8.25px at 15px, and it drops 3.5px to put its baseline on the line's */
 .sf .org-name { height: 15px; width: auto; vertical-align: -3.5px; }
 .kirby .org-name { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 15px; font-weight: 400; color: #1d1d1b; }
 .now a.sf { background: #dcefff; }
-.now a.sf .at { color: #0b8fd6; }
 .now a.sf:hover, .now a.sf.peeking { background: #c8e5fd; }
 .now a.kirby { background: #f3e7d3; }
-.now a.kirby .at { color: #a27b44; }
 .now a.kirby:hover, .now a.kirby.peeking { background: #ecdcc0; }
