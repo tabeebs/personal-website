@@ -310,7 +310,7 @@ a.unsw:focus-visible { outline: 2px solid #2d3a68; outline-offset: 3px; border-r
 }
 .unsw-shine > span {
   position: absolute; top: -20%; bottom: -20%; left: 0; width: 100%;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 20%, rgba(255, 255, 255, .85) 50%, rgba(255, 255, 255, 0) 80%);
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 10%, rgba(255, 255, 255, .95) 38%, #fff 50%, rgba(255, 255, 255, .95) 62%, rgba(255, 255, 255, 0) 90%);
   mix-blend-mode: screen;
 }
 .unsw-slot img {
