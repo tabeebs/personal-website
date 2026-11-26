@@ -53,13 +53,33 @@ if (web) {
     if (performance.now() - t1 > 60) return 0;   // it hasn't moved lately: it's resting
     return Math.hypot(x1 - x0, y1 - y0) / Math.max(1, t1 - t0);
   };
+  // and a pointer dragging out a text selection is highlighting, not reaching for the web: with the button held
+  // down, the words never open, however long it rests there
+  // The same goes for the rest of the page's hover moments (UNSW's gleam, Salesforce's and Kirby's previews, the
+  // swash under "shaf", the letters of "kia ora!"): once the mouse is held down and dragged a few pixels, it's a
+  // selection, and html.selecting turns those spots deaf to the pointer until the button comes back up (style.css).
+  // A plain click doesn't move, so links still click as usual.
+  let downAt = null;
+  document.addEventListener('pointerdown', (e) => { if (e.pointerType === 'mouse' && e.button === 0) downAt = [e.clientX, e.clientY]; }, { capture: true, passive: true });
+  document.addEventListener('pointermove', (e) => {
+    if (!downAt || !(e.buttons & 1) || root.classList.contains('selecting')) return;
+    if (Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 4) root.classList.add('selecting');
+  }, { passive: true });
+  const unselect = () => { downAt = null; root.classList.remove('selecting'); };
+  document.addEventListener('pointerup', unselect, { capture: true, passive: true });
+  document.addEventListener('pointercancel', unselect, { passive: true });
+  addEventListener('blur', unselect);
+  let pressed = false;
+  document.addEventListener('pointerdown', (e) => { if (e.pointerType === 'mouse') pressed = (e.buttons & 1) === 1; }, { capture: true, passive: true });
+  document.addEventListener('pointerup', (e) => { if (e.pointerType === 'mouse') pressed = false; }, { capture: true, passive: true });
   let intent = 0;
   web.addEventListener('pointerenter', (e) => {
     if (e.pointerType !== 'mouse') return;
     clearTimeout(closer);
-    if (open) return;
+    if (open || e.buttons & 1) return;
     clearTimeout(intent);
     intent = setTimeout(function check() {
+      if (pressed) return;
       if (speed() < SLOW) set(true); else intent = setTimeout(check, 40);
     }, PAUSE_MS);
   });

@@ -93,6 +93,9 @@ a { color: inherit; }
 /* While a press that began outside the text plays with the rain (src/sky.js), dragging across the panel
    doesn't select anything. */
 html.playing, html.playing * { -webkit-user-select: none; user-select: none; }
+/* while someone drags out a text selection (src/web.js), the page's hover moments sit it out: no previews, gleams,
+   swashes or waves just because the pointer passed over them on the way */
+html.selecting :is(.hi, .name, a.unsw, .now a, .web) { pointer-events: none; }
 
 /* The panel holds the tabs and whichever view is open; the sky draws its soft card around it (src/sky.js). */
 .panel { position: relative; }
@@ -256,7 +259,7 @@ html.playing, html.playing * { -webkit-user-select: none; user-select: none; }
 /* GitHub and LinkedIn moved up into "the web", but the panel (and the sky's card around it) keeps the size it had
    with their two rows here. The home view's lines share that height out evenly instead: "kia ora!", the "shaf"
    paragraph and "CV on request" in the corner sit evenly apart, about 32px from one line's baseline to the next one's capitals. */
-#view-home .hi { margin-bottom: 18px; }
+#view-home .hi { margin-bottom: 28px; }   /* a little more air under the greeting, so the page doesn't feel crowded at the top */
 #view-home .hi + p { margin-bottom: 0; }   /* with the collections' margin, "CV on request" sits as far under the paragraph as the paragraph does under "kia ora!" */
 #view-home .collections { margin-top: 6px; }   /* Poppins sits low in its line box, so the CV note comes up to match */
 .collections { position: relative; min-height: 17px; }
@@ -386,7 +389,7 @@ html[data-intro]:not(.intro-welcome) :is(.intro .hi + p ~ p, .now, .cv) { opacit
    a little taller than the letters and centred on them. */
 .intro a.unsw { display: inline-flex; align-items: baseline; white-space: nowrap; text-decoration: none; outline: none; }
 a.unsw:focus-visible { outline: 2px solid #2d3a68; outline-offset: 3px; border-radius: 3px; }
-.unsw img { display: block; user-select: none; -webkit-user-drag: none; }
+.unsw img { display: block; -webkit-user-drag: none; }   /* selectable, so a highlight runs through it like the words around it */
 .unsw-mark { height: 12px; width: auto; transform: translateY(.5px); }
 .unsw-slot {
   --h: 12px; --shield-h: 16px; --w: calc(var(--shield-h) * 63.43 / 83.4); --gap: .27em;
@@ -452,14 +455,14 @@ a.unsw:focus-visible { outline: 2px solid #2d3a68; outline-offset: 3px; border-r
 /* What I'm up to: a short list under the greeting, one line each, verb first, each behind a soft ">", set in a
    little from the paragraph's edge. */
 .now { list-style: none; margin: 14px 0 0; padding: 0 0 0 14px; font-size: 15px; line-height: 1.5; color: #3d4560; }
-.now li { position: relative; padding-left: 18px; margin: 0 0 5px; }
+.now li { position: relative; padding-left: 18px; margin: 0 0 15px; }   /* room between the lines, so Salesforce and Kirby are easy to tell apart under a pointer or a thumb */
 .now li:last-child { margin-bottom: 0; }
 .now li::before { content: ">"; position: absolute; left: 0; top: 0; color: #9aa0b2; font-weight: 500; }
 /* Salesforce and Kirby, like Justin Wu's "@Tesla Design Studio": "@" and the name in the organisation's own lettering
    (Salesforce's wordmark from its logo; Kirby's name in a plain grotesque like its own), on a soft wash of its colour */
 .now a.org { white-space: nowrap; text-decoration: none; outline: none; padding: 1px 6px 2px; border-radius: 5px; transition: background-color .2s; }
 .now a.org:focus-visible { outline: 2px solid #2d3a68; outline-offset: 3px; }
-.now a.org img { display: inline-block; user-select: none; -webkit-user-drag: none; }
+.now a.org img { display: inline-block; -webkit-user-drag: none; }   /* selectable, like Kirby's name */
 .now .at { font-weight: 600; }
 /* the wordmark's x-height is .551 of its height and its f dips below the line (the baseline sits .768 down), so at 15px
    tall its x-height matches Poppins' 8.25px at 15px, and it drops 3.5px to put its baseline on the line's */
