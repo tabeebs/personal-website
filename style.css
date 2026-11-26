@@ -96,9 +96,12 @@ html.playing, html.playing * { -webkit-user-select: none; user-select: none; }
 
 /* The panel holds the tabs and whichever view is open; the sky draws its soft card around it (src/sky.js). */
 .panel { position: relative; }
-.views { position: relative; }
-.view { display: flow-root; }
-.view[hidden] { display: none; }
+/* every view sits in the same grid cell, so the panel is always the tallest view's size and doesn't change when
+   you switch tabs; a hidden view still takes its room, just unseen */
+.views { position: relative; display: grid; }
+.view { display: flow-root; grid-area: 1 / 1; min-width: 0; }
+.view[hidden] { display: flow-root; visibility: hidden; }
+.view.leaving { visibility: visible; pointer-events: none; }
 .view > .intro:first-child > :first-child { padding-right: 126px; }   /* the greeting clears the tabs */
 
 /* Writing: a short list of pieces, each a link to its own page */
@@ -167,15 +170,15 @@ html.playing, html.playing * { -webkit-user-select: none; user-select: none; }
   padding: 2px 0 3px; border-radius: 999px; text-align: center; pointer-events: none;
   background: var(--tint);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7), 0 0 0 .5px rgba(45, 58, 104, .16), 0 5px 12px -5px rgba(45, 58, 104, .35);
-  opacity: 0; transform: translateY(-5px) scale(.5); transform-origin: var(--nub) -6px;
+  opacity: 0; transform: translateY(5px) scale(.5); transform-origin: var(--nub) calc(100% + 6px);
   transition: opacity .15s, transform .25s cubic-bezier(.3, 1.5, .5, 1), left .4s cubic-bezier(.3, 1.4, .5, 1),
     width .4s cubic-bezier(.3, 1.4, .5, 1), background-color .3s;
 }
 .tip.show { opacity: 1; transform: none; transition: opacity .15s, transform .5s cubic-bezier(.3, 1.8, .5, 1),
   left .4s cubic-bezier(.3, 1.4, .5, 1), width .4s cubic-bezier(.3, 1.4, .5, 1), background-color .3s; }
 .tip.snap { transition: opacity .15s, transform .5s cubic-bezier(.3, 1.8, .5, 1), background-color .3s; }
-.tip::before {
-  content: ""; position: absolute; top: -3px; left: calc(var(--nub) - 4px); width: 8px; height: 8px; border-radius: 2px 0 0 0;
+.tip::before {   /* a tiny nub, pointing down at the tab */
+  content: ""; position: absolute; bottom: -3px; left: calc(var(--nub) - 4px); width: 8px; height: 8px; border-radius: 0 0 2px 0;
   background: inherit; transform: rotate(45deg); transition: left .4s cubic-bezier(.3, 1.4, .5, 1);
 }
 .tip.snap::before { transition: none; }
@@ -416,8 +419,9 @@ a.unsw:focus-visible { outline: 2px solid #2d3a68; outline-offset: 3px; border-r
   transition: opacity .12s, transform .16s ease-in, visibility 0s .16s;
 }
 .peek canvas { display: block; width: 272px; height: 170px; border-radius: 10px; background: #f3f3f3; }
+/* the open window never takes the pointer: Kirby's sits right over the Salesforce logo, and would swallow its hover */
 .peek-open .peeking .peek {
-  visibility: visible; pointer-events: auto; opacity: 1;
+  visibility: visible; opacity: 1;
   transform: translateX(calc(-50% + var(--nudge))) translateY(0) scale(1);
   transition: opacity .14s, transform .38s cubic-bezier(.3, 1.45, .5, 1), visibility 0s;
 }

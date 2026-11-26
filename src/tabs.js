@@ -98,15 +98,15 @@ function showTip(tab, { brief = false } = {}) {
   tipFor = tab;
   const text = tip.querySelector('.tip-text');
   text.textContent = tab.getAttribute('aria-label').toLowerCase();
-  // fit the label to its word and centre it under the tab; only on a screen too narrow for that does it shift
-  // left to stay in view (the nub still points at the tab)
+  // fit the label to its word and centre it above the tab (below would cover "the web"); only on a screen too
+  // narrow for that does it shift left to stay in view (the nub still points at the tab)
   const w = text.offsetWidth + 20;
   const center = nav.offsetLeft + tab.offsetLeft + tab.offsetWidth / 2;
   const room = document.documentElement.clientWidth - 6 - tip.offsetParent.getBoundingClientRect().left;
   const x = Math.min(center - w / 2, room - w);
   const wasShown = tip.classList.contains('show');
   tip.classList.toggle('snap', !wasShown);   // appearing: pop up in place; already up: glide over
-  tip.style.setProperty('--y', `${nav.offsetTop + nav.offsetHeight + 8}px`);
+  tip.style.setProperty('--y', `${nav.offsetTop - tip.offsetHeight - 8}px`);
   tip.style.setProperty('--tint', tab.dataset.tint || '#fff');
   tip.style.setProperty('--x', `${x}px`);
   tip.style.setProperty('--w', `${w}px`);
@@ -126,43 +126,31 @@ function hideTip(delay = 0) {
 }
 
 // ---- views ----
-// Switching views: the old view's lines blur away quickly, all together, then the panel eases to the new view's
-// height (the sky's card follows it, see sky.js), so nothing is ever left showing past the panel's edge. Growing,
-// each new line arrives as the edge uncovers it. New lines slide in from the side the lens went and come into
-// focus as they land. Lines are paragraphs, list rows, and anything marked .piece.
-const viewsEl = document.querySelector('.views');
+// Switching views: the panel stays exactly the same size (every view sits in the same spot, so the panel is as
+// tall as the tallest), the old view's lines blur away quickly, all together, and the new lines slide in from the
+// side the lens went and come into focus as they land. Lines are paragraphs, list rows, and anything marked .piece.
 const pieces = (v) => [...v.querySelectorAll('.intro > *, li, .piece')];
-const EASE = 'cubic-bezier(.33, 1, .68, 1)';                    // ease-out cubic: 1 - (1 - u)^3
-const reach = (e) => 1 - Math.cbrt(1 - clamp(e, 0, 1));         // how far through the easing it covers fraction e
-const EDGE = 34;                                                // the card reaches this far below the views (sky.js)
-const OUT = 120;                                                // how long the old lines take to go, ms
+const OUT = 120;                                               // how long the old lines take to go, ms
 let finishSwap = null;
 function swap(from, to, dir, animate = true) {
   finishSwap?.();                                          // a switch still in flight lands at once
   if (!animate || calm.matches) { from.hidden = true; to.hidden = false; return; }
-  const h0 = viewsEl.offsetHeight;
-  // the old view leaves the flow and stays where it was, so the new one can take its place underneath
-  Object.assign(from.style, { position: 'absolute', top: '0', left: '0', right: '0', pointerEvents: 'none' });
+  // the views are stacked in one spot (style.css), so the panel is always the taller one's size and never moves;
+  // the old view stays shown, inert, while its lines go, then hides
+  from.classList.add('leaving');
   from.setAttribute('inert', '');
   to.hidden = false;
-  const h1 = to.offsetHeight, span = Math.abs(h1 - h0), grow = h1 > h0;
-  const D = clamp(260 + span * .6, 300, 460);
-  const top = viewsEl.getBoundingClientRect().top, box = (el) => el.getBoundingClientRect();
-  const edgeAt = (y) => (span < 1 ? 0 : reach((y - h0 - EDGE) / span) * D);   // when (ms) a growing panel's edge passes y
   const anims = [];
-  // the old lines go quickly, all together, so none is left hanging over the sky once the panel starts to move
+  // the old lines go quickly, all together
   pieces(from).forEach((el) => anims.push(el.animate([
     { opacity: 1, transform: 'none', filter: 'blur(0)' },
     { opacity: 0, transform: `translateX(${-dir * 10}px)`, filter: 'blur(3px)' },
   ], { duration: OUT, easing: 'cubic-bezier(.2, 0, .4, 1)', fill: 'forwards' })));
-  // shrinking waits for them to be gone; growing starts at once
-  anims.push(viewsEl.animate([{ height: `${h0}px` }, { height: `${h1}px` }], { duration: D, delay: grow ? 0 : OUT - 10, easing: EASE, fill: 'backwards' }));
   pieces(to).forEach((el, i) => {
-    const r = box(el), start = grow ? edgeAt(r.bottom - top) : 0;   // lines the edge uncovers come as it does
     anims.push(el.animate([
       { opacity: 0, transform: `translate(${dir * 18}px, 4px) scale(.98)`, filter: 'blur(4px)' },
       { opacity: 1, transform: 'none', filter: 'blur(0)' },
-    ], { duration: 460, delay: Math.max(90 + i * 45, start), easing: 'cubic-bezier(.2, .9, .25, 1)', fill: 'backwards' }));
+    ], { duration: 460, delay: 90 + i * 45, easing: 'cubic-bezier(.2, .9, .25, 1)', fill: 'backwards' }));
   });
   let done = false;
   finishSwap = () => {
@@ -171,7 +159,7 @@ function swap(from, to, dir, animate = true) {
     anims.forEach((a) => a.cancel());
     from.hidden = true;
     from.removeAttribute('inert');
-    Object.assign(from.style, { position: '', top: '', left: '', right: '', pointerEvents: '' });
+    from.classList.remove('leaving');
   };
   Promise.all(anims.map((a) => a.finished)).then(finishSwap, () => {});
 }
