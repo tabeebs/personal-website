@@ -126,17 +126,6 @@ if (label) {
     svg.getBoundingClientRect();   // so the light coil draws in, rather than just appearing
     svg.classList.add('shown');
   };
-  // coming back to the Home tab (src/hello.js): the light coil is wiped at once and draws in again, as it did when
-  // the page opened
-  window.__recoil = () => {
-    if (!svg || reduced) return;
-    const base = svg.querySelector('.base');
-    base.style.transition = 'none';
-    svg.classList.remove('shown');
-    svg.getBoundingClientRect();
-    base.style.transition = '';
-    svg.classList.add('shown');
-  };
   // it waits for the font too, so it fits the words, and for its own line to rise into place (src/intro.js): like
   // each step of the opening (src/hello.js), it starts a beat after that has landed, once it's 80% through
   const landed = (a) => a.ready.then(() => {
