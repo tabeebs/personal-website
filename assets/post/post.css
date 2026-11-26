@@ -53,10 +53,10 @@ body.post-page {
 .rail-list .label { opacity: 0; translate: -6px 0; transition: opacity .18s ease-out, translate .22s ease-out, color .2s; }
 .rail-list li.active .label { color: var(--ink); }
 .rail-list a:hover .label { color: var(--ink); }
-/* the names show only while you point at the rail (or move through it with the keyboard): a click leaves the
-   link focused, but once the pointer moves away they all go again */
-.rail:hover .label, .rail:has(a:focus-visible) .label { opacity: 1; translate: 0 0; }
-.rail:hover .label { transition-delay: calc(var(--i, 0) * 18ms); }
+/* the section you're in always shows its name; the others show only while you point at the rail (or move through it
+   with the keyboard). A click leaves the link focused, but once the pointer moves away the others go again */
+.rail-list li.active .label, .rail:hover .label, .rail:has(a:focus-visible) .label { opacity: 1; translate: 0 0; }
+.rail:hover li:not(.active) .label { transition-delay: calc(var(--i, 0) * 18ms); }
 .rail-list a:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
 @media (min-width: 1120px) {
