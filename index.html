@@ -5,11 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>tabeebs</title>
   <link rel="icon" type="image/png" href="/favicon.png" />
-  <!-- type: Bricolage Grotesque for "kia ora!", Poppins for everything else -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700..800&family=Poppins:wght@400;500;600&display=swap" />
-  <link rel="stylesheet" href="/style.css?v=19" />
+  <!-- type (self-hosted, see the top of style.css): fetch the two faces the first screen needs straight away -->
+  <link rel="preload" href="/assets/fonts/bricolage-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/assets/fonts/poppins-400-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="/style.css?v=20" />
   <script src="/build/intro.js"></script>
 </head>
 <body>
