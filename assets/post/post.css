@@ -29,7 +29,9 @@ body.post-page {
 
 /* ---- the contents rail (wide screens) ---- */
 .rail { position: fixed; z-index: 5; top: 32px; bottom: 32px; left: max(24px, calc(50vw - 330px - 340px)); width: 220px;
-  display: none; flex-direction: column; font-size: 13.5px; }
+  display: none; flex-direction: column; font-size: 13.5px;
+  pointer-events: none; }   /* its empty space lets the pointer through to wide figures underneath */
+.rail-back, .rail-track { pointer-events: auto; }
 .rail-back { flex: none; margin-bottom: 20px; color: var(--muted); text-decoration: none; }
 .rail-back:hover { color: var(--ink); }
 .rail-track { position: relative; min-height: 0; overflow-y: auto; scrollbar-width: none; padding: 2px 0 2px 2px; }
