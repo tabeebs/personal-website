@@ -47,7 +47,8 @@ html:has(> body.post-page) { background: #16171c; }
 .arc-card[hidden] { display: none; }
 .arc-card { margin-top: 14px; padding: 12px 14px; border-radius: 10px; background: #f6f7fa; font-size: 14px; min-height: 48px; }
 .arc-route { display: flex; flex-wrap: wrap; gap: 6px; font-weight: 600; color: #2d3a68; }
-.arc-route .arrow { color: #dc9f22; }
+.arc-mark { flex: none; align-self: center; overflow: visible; }
+.arc-mark path { fill: none; stroke-width: 1.8; stroke-linecap: round; }
 .arc-tags { display: flex; flex-wrap: wrap; gap: 5px; margin: 6px 0; }
 .tag { padding: 0 8px; border-radius: 999px; font-size: 11.5px; line-height: 1.7; background: color-mix(in srgb, var(--tag, #2d3a68) 16%, #fff);
   color: color-mix(in srgb, var(--tag, #2d3a68) 80%, #000); }
@@ -107,7 +108,6 @@ html:has(> body.post-page) { background: #16171c; }
   gap: 8px 16px; padding: 16px 20px 12px; background: inherit; }
 .cv-route { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin: 0; font-family: "Bricolage Grotesque", Poppins, sans-serif;
   font-size: 22px; line-height: 1.2; font-weight: 720; letter-spacing: -.02em; color: #2d3a68; }
-.cv-route .arrow { color: #dc9f22; }
 .cv-nav { display: flex; align-items: center; gap: 4px; }
 .cv-nav button { width: 32px; height: 32px; border: 0; border-radius: 8px; background: none; color: inherit; font: inherit;
   font-size: 20px; line-height: 1; cursor: pointer; }

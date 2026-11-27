@@ -202,9 +202,12 @@ function paint() {
 const byId = (id) => real.find((c) => c.id === id);
 
 const where = (end) => `${ep(end.ep).label}${end.t ? ` · ${end.t}` : ''}`;
+// between the two ends of a connection: a little arc in that connection's own colour (no arrows)
+const arcMark = (c, w = 20) => `<svg class="arc-mark" width="${w}" height="${Math.round(w * .55)}" viewBox="0 0 20 11" aria-label="to">
+  <path d="M2 10 A8 8 0 0 1 18 10" stroke="${ramp((c.to.ep - c.from.ep) / (EPS.length - 1))}" /></svg>`;
 function describe(c) {
   return `
-    <div class="arc-route"><span>${where(c.from)}</span><span class="arrow">→</span><span>${where(c.to)}</span></div>
+    <div class="arc-route"><span>${where(c.from)}</span>${arcMark(c)}<span>${where(c.to)}</span></div>
     ${c.characters?.length ? `<div class="arc-tags">${c.characters.map((n) => `<span class="tag char">${n}</span>`).join('')}</div>` : ''}
     <p class="arc-note">${c.note}</p>
     ${c.check ? `<p class="arc-check">To do: ${c.check}</p>` : ''}`;
@@ -287,7 +290,7 @@ function viewHtml(c, i, total) {
   const analysis = [].concat(c.analysis || []).filter(Boolean);
   return `
     <header class="cv-head">
-      <h3 class="cv-route"><span>${where(c.from)}</span><span class="arrow">→</span><span>${where(c.to)}</span></h3>
+      <h3 class="cv-route"><span>${where(c.from)}</span>${arcMark(c, 30)}<span>${where(c.to)}</span></h3>
       <div class="cv-nav">
         <button type="button" data-go="-1" aria-label="Previous connection" ${i ? '' : 'disabled'}>‹</button>
         <span class="cv-count">${i + 1} / ${total}</span>
