@@ -20,6 +20,7 @@ html:has(> body.post-page) { background: #16171c; }
 
 .chart { width: 100%; }
 .arc-svg { display: block; width: 100%; overflow: visible; }
+.arc-svg .arcs { mix-blend-mode: screen; }   /* the <g> of arcs: crossings add up and glow */
 .arc { fill: none; stroke-width: 1.6; opacity: .8; transition: opacity .15s, stroke-width .15s; pointer-events: none; }
 .arc-svg.focused .arc { opacity: .07; }
 .arc.off { opacity: .07; }

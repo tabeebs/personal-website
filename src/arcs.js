@@ -39,8 +39,9 @@ const toMins = (t) => {
 };
 
 // ---- colour ----
-// by distance: short reaches are teal, the longest are tomato, through blue and lilac
-const RAMP = ['#25a088', '#2f6cbc', '#7f71d4', '#d8689c', '#dc4c36'];
+// by distance: short reaches burn crimson, then orange, and the longest glow gold. They add up where they cross
+// (screen blending, assets/aot/aot.css), so the busy stretches of the show glow brightest.
+const RAMP = ['#c81d3a', '#f0532c', '#ff9a2e', '#ffd56b'];
 function mix(a, b, k) {
   const p = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
   const [x, y] = [p(a), p(b)];
