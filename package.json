@@ -5,7 +5,8 @@
   "scripts": {
     "start": "node scripts/serve.js 5173",
     "build": "esbuild src/intro.js src/sky.js src/doodles.js src/favicon.js src/tabs.js src/hello.js src/contact.js src/web.js src/peek.js src/post.js src/arcs.js --bundle --format=esm --minify --legal-comments=none --outdir=build",
-    "favicon": "node scripts/favicon-png.js"
+    "favicon": "node scripts/favicon-png.js",
+    "clip": "node scripts/clip.js"
   },
   "devDependencies": {
     "esbuild": "0.28.2",
