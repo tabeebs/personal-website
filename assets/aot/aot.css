@@ -27,6 +27,8 @@ html:has(> body.post-page) { background: #16171c; }
 .hit { fill: none; stroke: transparent; stroke-width: 9; pointer-events: stroke; cursor: pointer; outline: none; }
 .ep { fill: #c9cfdb; cursor: pointer; transition: fill .12s; }
 .ep.lit { fill: #dc9f22; }
+.part-tick { stroke: #c9cfdb; stroke-width: 1; }
+.post-page .part-tick { stroke: #3a3c45; }
 .bracket { fill: none; stroke: #c9cfdb; stroke-width: 1; }
 .part-label { font-size: 12px; fill: #6b7385; }
 

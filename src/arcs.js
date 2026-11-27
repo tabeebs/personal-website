@@ -9,22 +9,23 @@ const BASE = '/assets/aot/';
 const NS = 'http://www.w3.org/2000/svg';
 
 // ---- the episodes ----
-// Global numbering 1-89: the 87 TV episodes, then the two Final Chapters specials. Runtimes in minutes.
+// Global numbering 1-89: the 87 TV episodes, then the two Final Chapters specials, labelled "Movies". Runtimes in minutes.
 const PARTS = [
-  { short: 'S1', name: 'Season 1', season: 1, offset: 0, count: 25 },
-  { short: 'S2', name: 'Season 2', season: 2, offset: 0, count: 12 },
-  { short: 'S3·1', name: 'Season 3 Part 1', season: 3, offset: 0, count: 12 },
-  { short: 'S3·2', name: 'Season 3 Part 2', season: 3, offset: 12, count: 10 },
-  { short: 'S4·1', name: 'Final Season Part 1', season: 4, offset: 0, count: 16 },
-  { short: 'S4·2', name: 'Final Season Part 2', season: 4, offset: 16, count: 12 },
-  { short: 'FC', name: 'The Final Chapters', special: true, count: 2, runtimes: [61, 85] },
+// Labels, full then short: the season labels under the chart all use full names when they fit, else all short ones.
+  { names: ['Season 1', 'S1'], season: 1, offset: 0, count: 25 },
+  { names: ['Season 2', 'S2'], season: 2, offset: 0, count: 12 },
+  { names: ['Season 3 Part 1', 'S3 P1'], season: 3, offset: 0, count: 12 },
+  { names: ['Season 3 Part 2', 'S3 P2'], season: 3, offset: 12, count: 10 },
+  { names: ['Season 4 Part 1', 'S4 P1'], season: 4, offset: 0, count: 16 },
+  { names: ['Season 4 Part 2', 'S4 P2'], season: 4, offset: 16, count: 12 },
+  { names: ['Movies', 'Movies'], special: true, count: 2, runtimes: [61, 85] },
 ];
 const EPS = [];
 PARTS.forEach((p, pi) => {
   for (let i = 0; i < p.count; i++) {
     EPS.push({
       n: EPS.length + 1, part: pi,
-      label: p.special ? `Final Chapters ${i + 1}` : `S${p.season} E${p.offset + i + 1}`,
+      label: p.special ? `Movie ${i + 1}` : `S${p.season} E${p.offset + i + 1}`,
       mins: p.runtimes ? p.runtimes[i] : 24,
     });
   }
@@ -77,22 +78,31 @@ let geo = null;
 function draw() {
   const W = root.querySelector('.chart').clientWidth;
   const narrow = W < 560;
-  const padX = 4, epGap = W < 700 ? .5 : 1, partGap = narrow ? 5 : 10;
+  const epGap = W < 700 ? .5 : 1, partGap = narrow ? 5 : 10;
   const arcH = Math.round(Math.min(470, Math.max(170, W * .42)));
-  const barH = narrow ? 12 : 16, labelH = 30;
+  const barH = narrow ? 12 : 16, labelH = 50;
   const H = arcH + 14 + barH + labelH;
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
   svg.setAttribute('height', H);
   svg.replaceChildren();
 
-  // episode x positions, widths in proportion to runtime
-  const totalMins = EPS.reduce((s, e) => s + e.mins, 0);
+  // Side margins, the same on both sides so the chart stays centred: enough that the last label ("Movies",
+  // under only two episodes) can sit centred under them without running off the edge.
+  const probe = el('text', { class: 'part-label' }, svg);
+  probe.textContent = PARTS.at(-1).names[narrow ? 1 : 0];
+  const lastW = probe.getComputedTextLength();
+  probe.remove();
+  const unitGuess = (W - partGap * (PARTS.length - 1)) / EPS.length;
+  const padX = Math.max(4, Math.ceil(lastW / 2 - unitGuess * PARTS.at(-1).count / 2) + 2);
+  root.style.setProperty('--pad', `${padX}px`);   // the key lines up with the ends of the episodes
+
+  // episode x positions: every episode the same width (a timestamp still lands in proportion within its episode)
   const free = W - padX * 2 - partGap * (PARTS.length - 1) - epGap * (EPS.length - PARTS.length);
-  const perMin = free / totalMins;
+  const unit = free / EPS.length;
   let x = padX;
   const xs = EPS.map((e, i) => {
     if (i && EPS[i - 1].part !== e.part) x += partGap - epGap;
-    const at = { x, w: e.mins * perMin };
+    const at = { x, w: unit };
     x += at.w + epGap;
     return at;
   });
@@ -126,14 +136,33 @@ function draw() {
     const r = el('rect', { x: g.x.toFixed(1), y: y0, width: Math.max(.8, g.w).toFixed(1), height: barH, rx: 1, class: 'ep' }, epsG);
     r.dataset.ep = e.n;
   });
-  // season labels and their brackets
-  PARTS.forEach((p, pi) => {
+  // season labels, each centred under its bracket, all on one line if they fit (full names, else short ones). Only
+  // if even the short ones would touch does the later of two drop to a second line, still centred, with a thin tick.
+  const ly = y0 + barH + 25, GAP = 12;
+  const spans = PARTS.map((p, pi) => {
     const idx = EPS.filter((e) => e.part === pi).map((e) => e.n - 1);
     const a = xs[idx[0]].x, b = xs[idx.at(-1)].x + xs[idx.at(-1)].w;
     el('path', { d: `M${a} ${y0 + barH + 6} v4 H${b} v-4`, class: 'bracket' }, svg);
-    const t = el('text', { x: (a + b) / 2, y: y0 + barH + 24, class: 'part-label', 'text-anchor': 'middle' }, svg);
-    t.textContent = narrow ? p.short : p.name.replace('Final Season', 'S4').replace('Season ', 'S').replace(' Part ', ' · ').replace('The Final Chapters', 'Final Ch.');
+    return { c: (a + b) / 2, t: el('text', { x: ((a + b) / 2).toFixed(1), y: ly, class: 'part-label', 'text-anchor': 'middle' }, svg) };
   });
+  // first choice full names on one line, then short names on one line, then short names over two lines
+  for (const [level, rows] of [[0, 1], [1, 1], [1, 2]]) {
+    const rowEnd = [-Infinity, rows > 1 ? -Infinity : Infinity];
+    const ok = spans.every((sp, i) => {
+      sp.t.textContent = PARTS[i].names[Math.min(level, PARTS[i].names.length - 1)];
+      const w = sp.t.getComputedTextLength(), l = sp.c - w / 2;
+      sp.row = l >= rowEnd[0] + GAP ? 0 : l >= rowEnd[1] + GAP ? 1 : -1;
+      if (sp.row < 0) return false;
+      rowEnd[sp.row] = sp.c + w / 2;
+      return true;
+    });
+    if (ok || rows > 1) break;
+  }
+  for (const sp of spans) {
+    if (sp.row !== 1) continue;
+    sp.t.setAttribute('y', ly + 17);
+    el('line', { x1: sp.c, x2: sp.c, y1: y0 + barH + 11, y2: ly + 4, class: 'part-tick' }, svg);
+  }
 
   paint();
 }
