@@ -224,7 +224,7 @@ function pin(id) {
 
 // ---- the episode card ----
 // Hover an episode and a card folds down out of it, one row per connection that touches it. Hovering a row lights its
-// arc.
+// arc; clicking one grows it into the clip view (below).
 // The card stays while the pointer travels from the episode up into it; clicking the episode (or anything in the
 // card) keeps it open until you click elsewhere, press Escape or hit ×. On touch, a tap opens it.
 const epCard = document.createElement('div');
@@ -239,12 +239,105 @@ function rowHtml(c, n, i) {
   const out = c.from.ep === n && c.to.ep !== n;
   const other = out ? c.to : c.from;
   return `<li class="ep-row" style="--i:${i}" data-id="${c.id}" data-i="${i}">
-    <button type="button" class="ep-row-head">
+    <button type="button" class="ep-row-head" aria-haspopup="dialog">
       <span class="ep-row-dir">${out ? 'leads to' : 'comes from'}</span>
       <span class="ep-row-where">${ep(other.ep).label}${other.t ? `<span class="ep-row-t"> · ${other.t}</span>` : ''}</span>
     </button>
   </li>`;
 }
+
+// ---- the clip view ----
+// Click a row in the episode card and it grows into a big panel: the moment at each end of the connection as a
+// looping clip, side by side, and the analysis underneath. ‹ › (or the arrow keys) step through the episode's other
+// connections. A connection's clips and analysis live in connections.json:
+//   "clips": [{ "src": "/assets/aot/clips/levi-disgusting.mp4", "at": "from", "caption": "…" }, { …, "at": "to" }],
+//   "analysis": ["first paragraph", "second paragraph"]
+// "at" says which end the clip shows; an .mp4/.webm plays like a GIF (muted, looping), a .gif/.webp shows as an image.
+// Cut clips with `npm run clip` (scripts/clip.js).
+const view = document.createElement('dialog');
+view.className = 'clip-view';
+document.body.append(view);
+let viewAt = -1;
+
+const isVideo = (src) => /\.(mp4|webm|mov)$/i.test(src);
+function clipHtml(clip, end) {
+  if (!clip) {
+    return `<figure class="clip empty"><div class="clip-frame"><span>a clip from ${where(end)} goes here</span></div>
+      <figcaption>${where(end)}</figcaption></figure>`;
+  }
+  const m = isVideo(clip.src)
+    ? `<video src="${clip.src}" muted loop playsinline preload="auto" ${reduced.matches ? 'controls' : 'autoplay'}></video>`
+    : `<img src="${clip.src}" alt="${clip.alt || clip.caption || ''}">`;
+  return `<figure class="clip"><div class="clip-frame">${m}</div><figcaption>${clip.caption || where(end)}</figcaption></figure>`;
+}
+
+function viewHtml(c, i, total) {
+  const clips = c.clips || [];
+  const at = (k) => clips.filter((x) => x.at === k);
+  const figs = ['from', 'to'].flatMap((k) => (at(k).length ? at(k).map((x) => clipHtml(x, c[k])) : [clipHtml(null, c[k])]))
+    .concat(clips.filter((x) => x.at !== 'from' && x.at !== 'to').map((x) => clipHtml(x, c.from)));
+  const analysis = [].concat(c.analysis || []).filter(Boolean);
+  return `
+    <header class="cv-head">
+      <h3 class="cv-route"><span>${where(c.from)}</span><span class="arrow">→</span><span>${where(c.to)}</span></h3>
+      <div class="cv-nav">
+        <button type="button" data-go="-1" aria-label="Previous connection" ${i ? '' : 'disabled'}>‹</button>
+        <span class="cv-count">${i + 1} / ${total}</span>
+        <button type="button" data-go="1" aria-label="Next connection" ${i < total - 1 ? '' : 'disabled'}>›</button>
+        <button type="button" class="cv-x" aria-label="Close">×</button>
+      </div>
+    </header>
+    ${c.characters?.length ? `<div class="arc-tags cv-who">${c.characters.map((w) => `<span class="tag char">${w}</span>`).join('')}</div>` : ''}
+    <div class="cv-media${figs.length === 1 ? ' one' : ''}">${figs.join('')}</div>
+    <div class="cv-text">
+      <p class="cv-lede">${c.note}</p>
+      ${analysis.length ? analysis.map((p) => `<p>${p}</p>`).join('') : '<div class="cv-slot">the analysis goes here</div>'}
+      ${c.check ? `<p class="arc-check">To do: ${c.check}</p>` : ''}
+    </div>`;
+}
+
+function openClip(i, fromEl) {
+  const list = cardState.list;
+  if (!list?.[i]) return;
+  viewAt = i;
+  view.innerHTML = viewHtml(list[i], i, list.length);
+  view.setAttribute('aria-label', `${where(list[i].from)} to ${where(list[i].to)}`);
+  hoverArc = list[i].id; paint();
+  if (!view.open) {
+    view.showModal();
+    if (fromEl && !reduced.matches) {               // grow out of the row that was clicked
+      const a = fromEl.getBoundingClientRect(), b = view.getBoundingClientRect();
+      view.animate([
+        { transform: `translate(${a.left - b.left}px, ${a.top - b.top}px) scale(${a.width / b.width}, ${a.height / b.height})`, opacity: .4 },
+        { transform: 'none', opacity: 1 },
+      ], { duration: 420, easing: 'cubic-bezier(.2, .9, .25, 1)' });
+    }
+  }
+  view.scrollTop = 0;
+  view.querySelector('.cv-x').focus({ preventScroll: true });
+}
+function closeClip() {
+  if (!view.open) return;
+  const done = () => { view.close(); view.replaceChildren(); hoverArc = null; paint(); };
+  if (reduced.matches) return done();
+  view.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(8px) scale(.98)' }],
+    { duration: 170, easing: 'ease-in' }).onfinish = done;
+}
+view.addEventListener('cancel', (e) => { e.preventDefault(); closeClip(); });
+view.addEventListener('click', (e) => {
+  if (e.target === view) {                          // the backdrop (outside the panel) closes it
+    const r = view.getBoundingClientRect();
+    if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) closeClip();
+    return;
+  }
+  if (e.target.closest('.cv-x')) closeClip();
+  const go = e.target.closest('[data-go]');
+  if (go) openClip(viewAt + +go.dataset.go);
+});
+view.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowLeft' && viewAt > 0) openClip(viewAt - 1);
+  if (e.key === 'ArrowRight' && viewAt < cardState.list.length - 1) openClip(viewAt + 1);
+});
 
 function placeCard() {
   if (epCard.hidden || cardState.n == null) return;
@@ -315,11 +408,13 @@ epCard.addEventListener('pointerover', (e) => {
 epCard.addEventListener('click', (e) => {
   if (e.target.closest('.ep-card-x')) { closeEp(); return; }
   cardState.pinned = true;                       // once you've clicked inside, it stays
+  const row = e.target.closest('.ep-row');
+  if (row) openClip(+row.dataset.i, row);
 });
 document.addEventListener('pointerdown', (e) => {
-  if (!epCard.hidden && !root.contains(e.target)) closeEp();
+  if (!epCard.hidden && !view.open && !root.contains(e.target)) closeEp();
 });
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !epCard.hidden) closeEp(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !epCard.hidden && !view.open) closeEp(); });
 
 svg.addEventListener('pointermove', (e) => {
   if (e.pointerType !== 'mouse') return;
