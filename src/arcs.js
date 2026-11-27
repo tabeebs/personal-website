@@ -2,7 +2,8 @@
 // is long, grouped by season; each connection is an arc from the moment in one episode to the moment it links
 // to. The farther apart the two moments are, the higher the arc. Hover an arc (or tap it) to read the note,
 // click to pin a note below the chart. Hover an episode and a card folds up out of it listing its connections.
-// Data: assets/aot/connections.json.
+// Data: assets/aot/connections.json. The mock page (writing/aot-mock.html, <figure data-mock>) adds made-up arcs from
+// mock-connections.json on top, to judge the layout by; the real page never loads them.
 // Source for build/arcs.js: rebuild with `npm run build` after editing.
 
 const BASE = '/assets/aot/';
@@ -130,6 +131,34 @@ const toMins = (t) => {
   const [m, s = 0] = String(t).split(':').map(Number);
   return m + s / 60;
 };
+
+// ---- mock arcs ----
+// Made up, so the layout can be judged with a realistic amount of data. A tiny seeded random, so they come out the
+// same on every load. They look exactly like real ones on purpose.
+function rng(seed) {
+  let s = seed >>> 0 || 1;
+  return () => ((s = Math.imul(s ^ (s >>> 15), 2246822507) ^ Math.imul(s ^ (s >>> 13), 3266489909)) >>> 0) / 4294967296;
+}
+const MOCK_NOTES = [
+  'A line that sounds throwaway here is answered, almost word for word, much later.',
+  'The same framing of the shot comes back, but the person standing in it has changed sides.',
+  'A small object in the background turns out to matter a great deal.',
+  'What looks like a character quirk here is explained by where they came from.',
+  'A promise made here is the one that gets broken there.',
+  'The music cue in this scene returns at the moment it means the opposite.',
+];
+const MOCK_WHO = [['Eren'], ['Mikasa'], ['Armin'], ['Levi'], ['Erwin'], ['Hange'], ['Reiner', 'Bertholdt'], ['Eren', 'Armin'], [], []];
+function makeMocks({ count, seed }) {
+  const r = rng(seed), out = [], pick = (a) => a[Math.floor(r() * a.length)];
+  const t = () => `${Math.floor(r() * 22) + 1}:${String(Math.floor(r() * 60)).padStart(2, '0')}`;
+  for (let i = 0; i < count; i++) {
+    const a = 1 + Math.floor(r() * 80);
+    const b = r() < .5 ? Math.min(EPS.length, a + 1 + Math.floor(r() * 12)) : a + 1 + Math.floor(r() * (EPS.length - a));
+    if (b > EPS.length || a === b) continue;
+    out.push({ id: `mock-${i}`, from: { ep: a, t: t() }, to: { ep: b, t: t() }, characters: pick(MOCK_WHO), note: pick(MOCK_NOTES) });
+  }
+  return out;
+}
 
 // ---- colour ----
 // by distance: short reaches burn crimson, then orange, and the longest glow gold. They add up where they cross
@@ -567,8 +596,17 @@ root.querySelector('.arc-key').innerHTML = `
 
 // ---- start ----
 (async () => {
-  meta = await fetch(BASE + 'connections.json').then((r) => r.json());
-  real = meta.connections;
+  const [data, mock] = await Promise.all([
+    fetch(BASE + 'connections.json').then((r) => r.json()),
+    'mock' in root.dataset
+      ? fetch(BASE + 'mock-connections.json').then((r) => (r.ok ? r.json() : null)).catch(() => null)
+      : null,
+  ]);
+  meta = data;
+  real = [...data.connections, ...(mock ? makeMocks(mock) : [])];
+  // while building it (on this computer only): a switch between the real page and the mock one
+  const sw = document.querySelector('.dev-switch');
+  if (sw && /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)) sw.hidden = false;
   pin(null);
   draw();
   new ResizeObserver(() => draw()).observe(root.querySelector('.chart'));

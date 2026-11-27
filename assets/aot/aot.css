@@ -154,6 +154,13 @@ html:has(> body.post-page) { background: #16171c; }
 /* (the 262px underneath is room for the episode card) */
 .post-page .post-body .arcs { --w: min(1180px, calc(100vw - 48px)); width: var(--w); margin: 48px 0 0 calc((100% - var(--w)) / 2);
   padding: 0 0 262px; background: none; box-shadow: none; border-radius: 0; color: var(--ink); font-size: 14px; line-height: 1.5; }
+/* the real / mock switch, only on this computer while building (src/arcs.js shows it) */
+.dev-switch { position: fixed; z-index: 20; top: 16px; right: 16px; display: flex; padding: 3px; border-radius: 999px;
+  background: rgba(255, 255, 255, .06); box-shadow: 0 0 0 1px var(--rule); font-size: 12.5px; }
+.dev-switch[hidden] { display: none; }
+.dev-switch a { padding: 3px 12px; border-radius: 999px; color: var(--muted); text-decoration: none; }
+.dev-switch a:hover { color: var(--ink); }
+.dev-switch a[aria-current] { background: var(--accent); color: var(--page); }
 /* a heading for the contents rail only: off the page, still read out by screen readers */
 .post-body h2.rail-only { position: absolute; width: 1px; height: 1px; margin: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .post-page .ep { fill: #3a3c46; }
