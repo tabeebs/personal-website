@@ -1,8 +1,8 @@
 // The Attack on Titan arc diagram (writing/aot.html, at /writing/aot). Every episode sits along one line, as wide as it
 // is long, grouped by season; each connection is an arc from the moment in one episode to the moment it links
 // to. The farther apart the two moments are, the higher the arc. Hover an arc (or tap it) to read the note,
-// hover an episode to light up everything that touches it, click to pin a note below the chart.
-// Data: assets/aot/connections.json (real) and sample-connections.json (made-up filler).
+// click to pin a note below the chart. Hover an episode to light up its arcs.
+// Data: assets/aot/connections.json.
 // Source for build/arcs.js: rebuild with `npm run build` after editing.
 
 const BASE = '/assets/aot/';
@@ -37,30 +37,6 @@ const toMins = (t) => {
   return m + s / 60;
 };
 
-// a tiny seeded random, so the sample arcs come out the same on every load
-function rng(seed) {
-  let s = seed >>> 0 || 1;
-  return () => ((s = Math.imul(s ^ (s >>> 15), 2246822507) ^ Math.imul(s ^ (s >>> 13), 3266489909)) >>> 0) / 4294967296;
-}
-function makeSamples({ count, seed }, types) {
-  const r = rng(seed), names = Object.keys(types), out = [];
-  for (let i = 0; i < count; i++) {
-    // most start in what's been logged so far (episodes 1-10) and reach forward, like the real notes will
-    const a = r() < .7 ? 1 + Math.floor(r() * 10) : 1 + Math.floor(r() * 80);
-    const far = r() < .55;
-    const b = Math.min(EPS.length, Math.max(1, far ? 30 + Math.floor(r() * 59) : a + Math.floor(r() * 14) - 2));
-    if (a === b) continue;
-    const t = () => `${Math.floor(r() * 22) + 1}:${String(Math.floor(r() * 60)).padStart(2, '0')}`;
-    out.push({
-      id: `sample-${i}`, sample: true,
-      from: { ep: Math.min(a, b), t: t() }, to: { ep: Math.max(a, b), t: t() },
-      type: names[Math.floor(r() * names.length)], characters: [],
-      note: 'Sample arc, a placeholder for the layout only. A real note goes here.',
-    });
-  }
-  return out;
-}
-
 // ---- colour ----
 // by distance: short reaches are teal, the longest are tomato, through blue and lilac
 const RAMP = ['#25a088', '#2f6cbc', '#7f71d4', '#d8689c', '#dc4c36'];
@@ -75,8 +51,8 @@ function ramp(k) {
 }
 
 // ---- state ----
-const state = { colour: 'distance', samples: true, upTo: PARTS.length - 1, hidden: new Set(), pinned: null, hoverEp: null };
-let meta, real = [], samples = [];
+const state = { pinned: null, hoverEp: null };
+let meta, real = [];
 
 const root = document.getElementById('arcs');
 const svg = document.createElementNS(NS, 'svg');
@@ -86,7 +62,6 @@ svg.setAttribute('aria-label', 'Arc diagram of connections between Attack on Tit
 root.querySelector('.chart').append(svg);
 const tip = root.querySelector('.arc-tip');
 const card = root.querySelector('.arc-card');
-const stats = root.querySelector('.arc-stats');
 
 const el = (name, attrs = {}, parent) => {
   const e = document.createElementNS(NS, name);
@@ -95,11 +70,7 @@ const el = (name, attrs = {}, parent) => {
   return e;
 };
 
-const visible = () => {
-  const lastEp = EPS.findLast((e) => e.part <= state.upTo).n;
-  return [...real, ...(state.samples ? samples : [])]
-    .filter((c) => c.to.ep <= lastEp && c.from.ep <= lastEp && !state.hidden.has(c.type));
-};
+const visible = () => real;
 
 // ---- layout + draw ----
 let geo = null;
@@ -107,7 +78,7 @@ function draw() {
   const W = root.querySelector('.chart').clientWidth;
   const narrow = W < 560;
   const padX = 4, epGap = W < 700 ? .5 : 1, partGap = narrow ? 5 : 10;
-  const arcH = Math.round(Math.min(360, Math.max(150, W * .36)));
+  const arcH = Math.round(Math.min(470, Math.max(170, W * .42)));
   const barH = narrow ? 12 : 16, labelH = 30;
   const H = arcH + 14 + barH + labelH;
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
@@ -133,8 +104,6 @@ function draw() {
   };
   geo = { xs, y0, barH };
 
-  const lastEp = EPS.findLast((e) => e.part <= state.upTo).n;
-
   // the arcs: one visible path and one wide invisible one to catch the pointer
   const arcsG = el('g', { class: 'arcs' }, svg);
   const hitsG = el('g', { class: 'hits' }, svg);
@@ -143,8 +112,7 @@ function draw() {
   for (const { c, x1, x2 } of list) {
     const rx = Math.max(.5, (x2 - x1) / 2), ry = Math.min(arcH - 4, rx * (arcH - 4) / (plotW / 2));
     const d = `M${x1.toFixed(1)} ${y0} A${rx.toFixed(1)} ${ry.toFixed(1)} 0 0 1 ${x2.toFixed(1)} ${y0}`;
-    const colour = state.colour === 'type' ? (meta.types[c.type] || '#b3b0a9') : ramp((x2 - x1) / plotW);
-    const p = el('path', { d, stroke: colour, class: `arc${c.sample ? ' sample' : ''}` }, arcsG);
+    const p = el('path', { d, stroke: ramp((x2 - x1) / plotW), class: 'arc' }, arcsG);
     p.dataset.id = c.id;
     const h = el('path', { d, class: 'hit', tabindex: 0, role: 'button', 'aria-label': `${ep(c.from.ep).label} to ${ep(c.to.ep).label}` }, hitsG);
     h.dataset.id = c.id;
@@ -155,8 +123,7 @@ function draw() {
   const epsG = el('g', { class: 'eps' }, svg);
   EPS.forEach((e, i) => {
     const g = xs[i];
-    const cls = ['ep', e.n <= meta.loggedThrough ? 'logged' : '', e.n > lastEp ? 'hidden-ep' : ''].join(' ').trim();
-    const r = el('rect', { x: g.x.toFixed(1), y: y0, width: Math.max(.8, g.w).toFixed(1), height: barH, rx: 1, class: cls }, epsG);
+    const r = el('rect', { x: g.x.toFixed(1), y: y0, width: Math.max(.8, g.w).toFixed(1), height: barH, rx: 1, class: 'ep' }, epsG);
     r.dataset.ep = e.n;
   });
   // season labels and their brackets
@@ -164,16 +131,10 @@ function draw() {
     const idx = EPS.filter((e) => e.part === pi).map((e) => e.n - 1);
     const a = xs[idx[0]].x, b = xs[idx.at(-1)].x + xs[idx.at(-1)].w;
     el('path', { d: `M${a} ${y0 + barH + 6} v4 H${b} v-4`, class: 'bracket' }, svg);
-    const t = el('text', { x: (a + b) / 2, y: y0 + barH + 24, class: `part-label${pi > state.upTo ? ' hidden-ep' : ''}`, 'text-anchor': 'middle' }, svg);
+    const t = el('text', { x: (a + b) / 2, y: y0 + barH + 24, class: 'part-label', 'text-anchor': 'middle' }, svg);
     t.textContent = narrow ? p.short : p.name.replace('Final Season', 'S4').replace('Season ', 'S').replace(' Part ', ' · ').replace('The Final Chapters', 'Final Ch.');
   });
 
-  // the "logged so far" marker: a little flag at the end of the logged episodes
-  const lx = xs[meta.loggedThrough - 1].x + xs[meta.loggedThrough - 1].w;
-  el('line', { x1: lx, x2: lx, y1: y0 - 6, y2: y0 + barH + 2, class: 'logged-mark' }, svg);
-
-  const shown = list.length, realShown = list.filter((a) => !a.c.sample).length;
-  stats.textContent = `${realShown} real connection${realShown === 1 ? '' : 's'}${state.samples ? ` + ${shown - realShown} samples` : ''} · rewatch #${meta.rewatch} · logged through episode ${meta.loggedThrough} of ${EPS.length}`;
   paint();
 }
 
@@ -183,7 +144,7 @@ function paint() {
   const focus = hoverArc || state.pinned;
   const touching = state.hoverEp;
   let any = false;
-  for (const c of [...real, ...samples]) {
+  for (const c of real) {
     const p = c._path;
     if (!p?.isConnected) continue;
     const on = focus ? c.id === focus : touching ? (c.from.ep === touching || c.to.ep === touching) : null;
@@ -197,17 +158,13 @@ function paint() {
     r.classList.toggle('lit', c ? (n === c.from.ep || n === c.to.ep) : n === touching);
   });
 }
-const byId = (id) => real.find((c) => c.id === id) || samples.find((c) => c.id === id);
+const byId = (id) => real.find((c) => c.id === id);
 
 const where = (end) => `${ep(end.ep).label}${end.t ? ` · ${end.t}` : ''}`;
 function describe(c) {
   return `
     <div class="arc-route"><span>${where(c.from)}</span><span class="arrow">→</span><span>${where(c.to)}</span></div>
-    <div class="arc-tags">
-      <span class="tag" style="--tag:${meta.types[c.type] || '#b3b0a9'}">${c.type}</span>
-      ${c.characters.map((n) => `<span class="tag char">${n}</span>`).join('')}
-      ${c.sample ? '<span class="tag sample">sample</span>' : ''}
-    </div>
+    ${c.characters?.length ? `<div class="arc-tags">${c.characters.map((n) => `<span class="tag char">${n}</span>`).join('')}</div>` : ''}
     <p class="arc-note">${c.note}</p>
     ${c.check ? `<p class="arc-check">To do: ${c.check}</p>` : ''}`;
 }
@@ -227,8 +184,8 @@ const hideTip = () => { tip.hidden = true; };
 function pin(id) {
   state.pinned = id;
   const c = id && byId(id);
-  card.innerHTML = c ? describe(c) : '<p class="arc-hint">Hover an arc to read it, or click one to pin it here.</p>';
-  card.classList.toggle('has', !!c);
+  card.innerHTML = c ? describe(c) : '';
+  card.hidden = !c;
   paint();
 }
 
@@ -241,7 +198,7 @@ svg.addEventListener('pointermove', (e) => {
   } else if (bar) {
     hoverArc = null; state.hoverEp = +bar.dataset.ep;
     const n = visible().filter((c) => c.from.ep === state.hoverEp || c.to.ep === state.hoverEp).length;
-    showTip(`<div class="arc-route"><span>${ep(state.hoverEp).label}</span></div><p class="arc-note muted">episode ${state.hoverEp} · ${n} connection${n === 1 ? '' : 's'}</p>`, e);
+    showTip(`<div class="arc-route"><span>${ep(state.hoverEp).label}</span></div><p class="arc-note">episode ${state.hoverEp} · ${n} connection${n === 1 ? '' : 's'}</p>`, e);
   } else {
     hoverArc = null; state.hoverEp = null; hideTip();
   }
@@ -261,61 +218,19 @@ svg.addEventListener('keydown', (e) => {
 svg.addEventListener('focusin', (e) => { const hit = e.target.closest('.hit'); if (hit) { hoverArc = hit.dataset.id; paint(); } });
 svg.addEventListener('focusout', () => { hoverArc = null; paint(); });
 
-// ---- controls ----
-function controls() {
-  const colourBtns = root.querySelectorAll('[data-colour]');
-  colourBtns.forEach((b) => b.addEventListener('click', () => {
-    state.colour = b.dataset.colour;
-    colourBtns.forEach((o) => o.setAttribute('aria-pressed', o === b));
-    legend();
-    draw();
-  }));
-
-  const sel = root.querySelector('#upto');
-  PARTS.forEach((p, i) => sel.append(new Option(i === PARTS.length - 1 ? 'everything' : `up to ${p.name}`, i)));
-  sel.value = state.upTo;
-  sel.addEventListener('change', () => { state.upTo = +sel.value; pin(null); draw(); });
-
-  const sm = root.querySelector('#samples');
-  sm.checked = state.samples;
-  sm.addEventListener('change', () => { state.samples = sm.checked; pin(null); draw(); });
-  legend();
-}
-
-function legend() {
-  const box = root.querySelector('.legend');
-  if (state.colour === 'distance') {
-    box.innerHTML = `<span class="ramp-label">near</span><span class="ramp" style="background:linear-gradient(90deg,${RAMP.join(',')})"></span><span class="ramp-label">far</span>`;
-    return;
-  }
-  box.replaceChildren(...Object.entries(meta.types).map(([name, colour]) => {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'type-key';
-    b.style.setProperty('--tag', colour);
-    b.setAttribute('aria-pressed', !state.hidden.has(name));
-    b.innerHTML = `<span class="swatch"></span>${name}`;
-    b.addEventListener('click', () => {
-      state.hidden.has(name) ? state.hidden.delete(name) : state.hidden.add(name);
-      b.setAttribute('aria-pressed', !state.hidden.has(name));
-      pin(null);
-      draw();
-    });
-    return b;
-  }));
-}
+// ---- the key ----
+// Under the chart, where the eye lands after reading it: a short low arc in the near colour, a tall wide one in the
+// far colour, since both height and colour say how far apart the two moments are.
+const keyArc = (w, h, colour) => `<svg class="key-arc" width="${w + 4}" height="${h + 3}" viewBox="0 0 ${w + 4} ${h + 3}" aria-hidden="true">
+  <path d="M2 ${h + 2} A${w / 2} ${h} 0 0 1 ${w + 2} ${h + 2}" stroke="${colour}" /></svg>`;
+root.querySelector('.arc-key').innerHTML = `
+  <span class="key-item">${keyArc(12, 6, RAMP[0])}close together</span>
+  <span class="key-item">${keyArc(30, 15, RAMP.at(-1))}far apart</span>`;
 
 // ---- start ----
 (async () => {
-  const [data, sample] = await Promise.all([
-    fetch(BASE + 'connections.json').then((r) => r.json()),
-    fetch(BASE + 'sample-connections.json').then((r) => (r.ok ? r.json() : null)).catch(() => null),
-  ]);
-  meta = data;
-  real = data.connections;
-  samples = sample ? makeSamples(sample, data.types) : [];
-  if (!samples.length) root.querySelector('.sample-toggle').hidden = true;
-  controls();
+  meta = await fetch(BASE + 'connections.json').then((r) => r.json());
+  real = meta.connections;
   pin(null);
   draw();
   new ResizeObserver(() => draw()).observe(root.querySelector('.chart'));

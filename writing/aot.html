@@ -7,11 +7,12 @@
   <link rel="icon" type="image/png" href="/favicon.png" />
   <link rel="preload" href="/assets/fonts/poppins-400-latin.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="/style.css?v=33" />
-  <link rel="stylesheet" href="/assets/post/post.css?v=2" />
-  <link rel="stylesheet" href="/assets/aot/aot.css?v=3" />
+  <link rel="stylesheet" href="/assets/post/post.css?v=3" />
+  <link rel="stylesheet" href="/assets/aot/aot.css?v=26" />
 </head>
-<!-- A reading page, on the blog's template (assets/post/post.css, src/post.js): night behind it, the contents rail on
-     the left. The writing goes in the dashed boxes; the headings are only a first guess at its sections. -->
+<!-- The Attack on Titan piece (assets/post/post.css for the night page): for now just the arc diagram (src/arcs.js).
+     The contents rail on the left is built from the h2s (src/post.js); the diagram's heading is hidden on the page
+     itself and shows only in the rail. The writing comes later. -->
 <body class="piece-page post-page">
 
   <nav class="rail" aria-label="On this page">
@@ -27,44 +28,15 @@
     <!-- (narrow screens only: on wide ones the rail carries the way back) -->
     <a class="back post-back" href="/writing">back to thoughts</a>
 
-    <header class="post-head">
-      <h1 class="post-title">the interconnectedness of attack on titan</h1>
-      <p class="post-dek">Every callback, parallel and bit of foreshadowing I could find, drawn as arcs across the show.</p>
-    </header>
-
-    <details class="toc-inline">
-      <summary>contents</summary>
-      <ol></ol>
-    </details>
-
     <article class="post-body">
-      <div class="slot">a short note before you read (the "pre thing"), set apart like a quote</div>
-
-      <h2 id="where-this-came-from">where this came from</h2>
-      <div class="slot">your intro goes here: the Bible cross-references picture, Cate Hall's piece on luck, and why
-        now (season 3)</div>
-
-      <h2 id="the-arcs">the arcs</h2>
+      <h2 id="the-arcs" class="rail-only">the arcs</h2>
       <!-- the arc diagram (src/arcs.js) -->
       <figure class="arcs" id="arcs">
-        <div class="arc-controls">
-          <div class="seg" role="group" aria-label="Colour arcs by">
-            <span class="ctl-label">colour by</span>
-            <button type="button" data-colour="distance" aria-pressed="true">distance</button>
-            <button type="button" data-colour="type" aria-pressed="false">type</button>
-          </div>
-          <div class="legend"></div>
-          <label class="ctl"><span class="ctl-label">spoilers</span><select id="upto"></select></label>
-          <label class="ctl sample-toggle"><input type="checkbox" id="samples" /> show sample arcs</label>
-        </div>
+        <div class="arc-key" aria-label="Key: short low arcs join moments close together, tall arcs join moments far apart"></div>
         <div class="chart"></div>
         <div class="arc-tip" hidden></div>
-        <figcaption class="arc-stats"></figcaption>
-        <div class="arc-card" aria-live="polite"></div>
+        <div class="arc-card" aria-live="polite" hidden></div>
       </figure>
-
-      <h2 id="what-they-show">what they show</h2>
-      <div class="slot">more writing here, if you want it</div>
     </article>
   </main>
 
