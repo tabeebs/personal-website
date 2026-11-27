@@ -197,14 +197,16 @@ const el = (name, attrs = {}, parent) => {
 const visible = () => real;
 
 // ---- layout + draw ----
+// how tall an arc is for its width: half an oval, its height 55% of half its width
+const ARC_K = .55;
 let geo = null;
 function draw() {
   const W = root.querySelector('.chart').clientWidth;
   const narrow = W < 560;
   const epGap = W < 700 ? .5 : 1, partGap = narrow ? 5 : 10;
-  // as tall as the width suits, but short enough that the chart and the card under it fit on the screen together
-  const roomH = innerHeight - (root.getBoundingClientRect().top + scrollY) - 14 - 16 - 50 - CARD_H - 24;
-  const arcH = Math.round(Math.max(170, Math.min(470, W * .42, roomH)));
+  // every arc is the same shape, its height a fixed share of its width (ARC_K), so the chart's height follows its
+  // width and nothing squashes on a short window: room for the widest possible arc, end to end
+  const arcH = Math.ceil(W / 2 * ARC_K) + 4;
   const barH = narrow ? 12 : 16, labelH = 50;
   const H = arcH + 14 + barH + labelH;
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
@@ -245,7 +247,7 @@ function draw() {
   const list = visible().map((c) => ({ c, x1: posOf(c.from), x2: posOf(c.to) }))
     .sort((a, b) => (b.x2 - b.x1) - (a.x2 - a.x1));     // long arcs underneath, short ones on top
   for (const { c, x1, x2 } of list) {
-    const rx = Math.max(.5, (x2 - x1) / 2), ry = Math.min(arcH - 4, rx * (arcH - 4) / (plotW / 2));
+    const rx = Math.max(.5, (x2 - x1) / 2), ry = rx * ARC_K;
     const d = `M${x1.toFixed(1)} ${y0} A${rx.toFixed(1)} ${ry.toFixed(1)} 0 0 1 ${x2.toFixed(1)} ${y0}`;
     const p = el('path', { d, stroke: ramp((x2 - x1) / plotW), class: 'arc' }, arcsG);
     p.dataset.id = c.id;
@@ -364,7 +366,6 @@ const epCard = document.createElement('div');
 epCard.className = 'ep-card';
 epCard.hidden = true;
 root.append(epCard);
-const CARD_H = 248 + 12;                             // the episode card's height (aot.css) and its gap
 const cardState = { n: null, pinned: false, closeT: 0, list: [] };
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -610,6 +611,4 @@ root.querySelector('.arc-key').innerHTML = `
   pin(null);
   draw();
   new ResizeObserver(() => draw()).observe(root.querySelector('.chart'));
-  let lastH = innerHeight;
-  addEventListener('resize', () => { if (innerHeight !== lastH) { lastH = innerHeight; draw(); } });
 })();
