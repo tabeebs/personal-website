@@ -54,6 +54,51 @@ html:has(> body.post-page) { background: #16171c; }
 .arc-note { margin: 0; color: #333; }
 .arc-check { margin: 6px 0 0; font-size: 12px; color: #b5651d; }
 
+/* the episode card: folds down out of the episode it belongs to, always the same height */
+.ep-card { position: absolute; z-index: 6; display: flex; flex-direction: column; width: min(320px, calc(100% - 8px)); height: 236px;
+  background: #fff; border-radius: 12px; font-size: 13px; line-height: 1.45; transform-origin: var(--px, 50%) 0;
+  box-shadow: 0 0 0 .5px rgba(45, 58, 104, .18), 0 14px 32px -10px rgba(45, 58, 104, .4); transition: left .18s ease; }
+.ep-card[hidden] { display: none; }
+.ep-card.unfold { animation: ep-unfold .38s cubic-bezier(.2, .9, .25, 1) both; }
+.ep-card.closing { animation: ep-fold .14s ease-in both; }
+@keyframes ep-unfold {
+  from { opacity: 0; transform: perspective(800px) rotateX(-82deg) scaleY(.35); }
+  45% { opacity: 1; }
+  to { opacity: 1; transform: none; }
+}
+@keyframes ep-fold { to { opacity: 0; transform: perspective(800px) rotateX(-82deg) scaleY(.5); } }
+
+.ep-card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; height: 56px; box-sizing: border-box; padding: 10px 10px 8px 14px;
+  border-bottom: 1px solid #eef0f4; }
+.ep-card-title { flex: 1; min-width: 0; display: flex; align-items: flex-start; gap: 8px; }
+/* the header's top line: the episode and the count are both 13px on one 18px line, so their letters stand on the
+   same baseline; the × is centred on the capitals of that line */
+.ep-card-title .name { flex: none; line-height: 18px; font-size: 13px; font-weight: 650; color: #2d3a68; }
+/* top right, against the close button: its right edge never moves, whichever episode */
+.ep-card-end { flex: none; display: flex; align-items: center; gap: 2px; height: 18px; }
+.ep-card-end .overall { line-height: 18px; color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.ep-card-x { display: grid; place-items: center; width: 24px; height: 24px; margin: -4px -4px -2px 0; padding: 0; border: 0;
+  border-radius: 6px; background: none; color: var(--muted); cursor: pointer; }
+.ep-card-x svg { display: block; }
+.ep-card-x:hover { background: rgba(127, 127, 127, .12); }
+.ep-rows { flex: 1; min-height: 0; list-style: none; margin: 0; padding: 4px; overflow: auto; perspective: 700px; overscroll-behavior: contain;
+  scrollbar-width: thin; scrollbar-color: rgba(127, 127, 127, .35) transparent; }
+.ep-row { border-radius: 8px; transform-origin: 50% 0; transition: background .15s;
+  animation: ep-row-in .32s cubic-bezier(.2, .9, .25, 1) both; animation-delay: calc(90ms + min(var(--i), 8) * 40ms); }
+@keyframes ep-row-in { from { opacity: 0; transform: rotateX(-88deg); } to { opacity: 1; transform: none; } }
+.ep-row-head { display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 8px; border: 0; border-radius: 8px;
+  background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.ep-row-head:hover { background: #f5f6f9; }
+.ep-row-dir { color: var(--muted); font-size: 12px; }
+.ep-row-where { flex: 1; font-weight: 600; color: #2d3a68; }
+.ep-row-t { font-weight: 400; color: var(--muted); }
+.ep-empty { flex: 1; display: grid; place-items: center; margin: 0; padding: 0 14px 14px; color: var(--muted); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ep-card.unfold, .ep-card.closing, .ep-row { animation: none; }
+  .ep-card { transition: none; }
+}
+
 @media (max-width: 560px) {
   .arcs { padding: 14px 10px 12px; margin-left: -6px; margin-right: -6px; }
   .piece-h1 { font-size: 28px; }
@@ -61,8 +106,9 @@ html:has(> body.post-page) { background: #16171c; }
 
 /* ---- on the night reading page (assets/post/post.css): the figure in night colours, a little wider than the text ---- */
 /* no panel: the chart sits straight on the night, centred on the page and wider than the text column */
+/* (the 250px underneath is room for the episode card) */
 .post-page .post-body .arcs { --w: min(1180px, calc(100vw - 48px)); width: var(--w); margin: 48px 0 0 calc((100% - var(--w)) / 2);
-  padding: 0; background: none; box-shadow: none; border-radius: 0; color: var(--ink); font-size: 14px; line-height: 1.5; }
+  padding: 0 0 250px; background: none; box-shadow: none; border-radius: 0; color: var(--ink); font-size: 14px; line-height: 1.5; }
 /* a heading for the contents rail only: off the page, still read out by screen readers */
 .post-body h2.rail-only { position: absolute; width: 1px; height: 1px; margin: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .post-page .ep { fill: #3a3c46; }
@@ -75,3 +121,7 @@ html:has(> body.post-page) { background: #16171c; }
 .post-page .tag { background: color-mix(in srgb, var(--tag, #b3b0a9) 22%, var(--card)); color: color-mix(in srgb, var(--tag, #b3b0a9) 55%, #fff); }
 .post-page .arc-note { color: var(--ink-soft); }
 .post-page .arc-check { color: #e7a56a; }
+.post-page .ep-card { background: #23242b; color: var(--ink); box-shadow: 0 0 0 1px var(--rule), 0 16px 34px -10px rgba(0, 0, 0, .65); }
+.post-page .ep-card-head { border-bottom-color: var(--rule); }
+.post-page .ep-card-title .name, .post-page .ep-row-where { color: var(--heading); }
+.post-page .ep-row-head:hover { background: rgba(255, 255, 255, .045); }

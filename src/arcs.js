@@ -1,7 +1,7 @@
 // The Attack on Titan arc diagram (writing/aot.html, at /writing/aot). Every episode sits along one line, as wide as it
 // is long, grouped by season; each connection is an arc from the moment in one episode to the moment it links
 // to. The farther apart the two moments are, the higher the arc. Hover an arc (or tap it) to read the note,
-// click to pin a note below the chart. Hover an episode to light up its arcs.
+// click to pin a note below the chart. Hover an episode and a card folds up out of it listing its connections.
 // Data: assets/aot/connections.json.
 // Source for build/arcs.js: rebuild with `npm run build` after editing.
 
@@ -80,7 +80,9 @@ function draw() {
   const W = root.querySelector('.chart').clientWidth;
   const narrow = W < 560;
   const epGap = W < 700 ? .5 : 1, partGap = narrow ? 5 : 10;
-  const arcH = Math.round(Math.min(470, Math.max(170, W * .42)));
+  // as tall as the width suits, but short enough that the chart and the card under it fit on the screen together
+  const roomH = innerHeight - (root.getBoundingClientRect().top + scrollY) - 14 - 16 - 50 - CARD_H - 24;
+  const arcH = Math.round(Math.max(170, Math.min(470, W * .42, roomH)));
   const barH = narrow ? 12 : 16, labelH = 50;
   const H = arcH + 14 + barH + labelH;
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
@@ -165,6 +167,7 @@ function draw() {
     el('line', { x1: sp.c, x2: sp.c, y1: y0 + barH + 11, y2: ly + 4, class: 'part-tick' }, svg);
   }
 
+  placeCard();
   paint();
 }
 
@@ -219,27 +222,133 @@ function pin(id) {
   paint();
 }
 
+// ---- the episode card ----
+// Hover an episode and a card folds down out of it, one row per connection that touches it. Hovering a row lights its
+// arc.
+// The card stays while the pointer travels from the episode up into it; clicking the episode (or anything in the
+// card) keeps it open until you click elsewhere, press Escape or hit ×. On touch, a tap opens it.
+const epCard = document.createElement('div');
+epCard.className = 'ep-card';
+epCard.hidden = true;
+root.append(epCard);
+const CARD_H = 236 + 12;                             // the episode card's height (aot.css) and its gap
+const cardState = { n: null, pinned: false, closeT: 0, list: [] };
+const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+
+function rowHtml(c, n, i) {
+  const out = c.from.ep === n && c.to.ep !== n;
+  const other = out ? c.to : c.from;
+  return `<li class="ep-row" style="--i:${i}" data-id="${c.id}" data-i="${i}">
+    <button type="button" class="ep-row-head">
+      <span class="ep-row-dir">${out ? 'leads to' : 'comes from'}</span>
+      <span class="ep-row-where">${ep(other.ep).label}${other.t ? `<span class="ep-row-t"> · ${other.t}</span>` : ''}</span>
+    </button>
+  </li>`;
+}
+
+function placeCard() {
+  if (epCard.hidden || cardState.n == null) return;
+  const g = geo.xs[cardState.n - 1], chart = root.querySelector('.chart');
+  const cx = chart.offsetLeft + g.x + g.w / 2;
+  // under the episode, so the arcs it lights up above stay in full view
+  const top = chart.offsetTop + geo.y0 + geo.barH + 9;
+  const w = epCard.offsetWidth;
+  const left = Math.max(0, Math.min(root.clientWidth - w, cx - w / 2));
+  epCard.style.left = `${left}px`;
+  epCard.style.top = `${top}px`;
+  epCard.style.setProperty('--px', `${cx - left}px`);
+}
+
+function openEp(n, pinIt = false) {
+  clearTimeout(cardState.closeT);
+  if (pinIt) cardState.pinned = true;
+  if (cardState.n === n && !epCard.hidden) return;
+  const fresh = epCard.hidden || epCard.classList.contains('closing');
+  cardState.n = n; state.hoverEp = n; hoverArc = null; hideTip();
+  const at = (c) => { const o = c.from.ep === n ? c.to : c.from; return o.ep * 100 + (toMins(o.t) ?? 0); };
+  const list = visible().filter((c) => c.from.ep === n || c.to.ep === n).sort((a, b) => at(a) - at(b));
+  cardState.list = list;
+  epCard.innerHTML = `
+    <div class="ep-card-head">
+      <div class="ep-card-title"><span class="name">${ep(n).label}</span></div>
+      <div class="ep-card-end"><span class="overall">(${n}/${EPS.length})</span>
+        <button type="button" class="ep-card-x" aria-label="Close"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+          <path d="M1.5 1.5l7 7M8.5 1.5l-7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg></button></div>
+    </div>
+    ${list.length ? `<ol class="ep-rows">${list.map((c, i) => rowHtml(c, n, i)).join('')}</ol>`
+      : `<p class="ep-empty">No connections yet.</p>`}`;
+  epCard.hidden = false;
+  epCard.classList.remove('closing');
+  if (fresh) { epCard.classList.remove('unfold'); void epCard.offsetWidth; epCard.classList.add('unfold'); }
+  placeCard();
+  paint();
+}
+
+function closeEp(now = false) {
+  clearTimeout(cardState.closeT);
+  if (epCard.hidden) return;
+  cardState.n = null; cardState.pinned = false; state.hoverEp = null; hoverArc = null;
+  paint();
+  if (now || reduced.matches) { epCard.hidden = true; epCard.classList.remove('unfold', 'closing'); return; }
+  epCard.classList.add('closing');
+  cardState.closeT = setTimeout(folded, 400);     // in case animationend never comes (a background tab)
+}
+function folded() {
+  if (!epCard.classList.contains('closing')) return;
+  epCard.hidden = true;
+  epCard.classList.remove('unfold', 'closing');
+}
+epCard.addEventListener('animationend', (e) => { if (e.target === epCard) folded(); });
+// a beat before closing, so the pointer can get from the episode up into the card
+const laterClose = () => {
+  if (cardState.pinned || epCard.hidden) return;
+  clearTimeout(cardState.closeT);
+  cardState.closeT = setTimeout(() => closeEp(), 110);
+};
+
+epCard.addEventListener('pointerenter', () => clearTimeout(cardState.closeT));
+epCard.addEventListener('pointerleave', () => { hoverArc = null; paint(); laterClose(); });
+epCard.addEventListener('pointerover', (e) => {
+  const id = e.target.closest('.ep-row')?.dataset.id || null;
+  if (id !== hoverArc) { hoverArc = id; paint(); }
+});
+epCard.addEventListener('click', (e) => {
+  if (e.target.closest('.ep-card-x')) { closeEp(); return; }
+  cardState.pinned = true;                       // once you've clicked inside, it stays
+});
+document.addEventListener('pointerdown', (e) => {
+  if (!epCard.hidden && !root.contains(e.target)) closeEp();
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !epCard.hidden) closeEp(); });
+
 svg.addEventListener('pointermove', (e) => {
   if (e.pointerType !== 'mouse') return;
   const hit = e.target.closest('.hit'), bar = e.target.closest('.ep');
-  if (hit) {
-    hoverArc = hit.dataset.id; state.hoverEp = null;
-    showTip(describe(byId(hoverArc)), e);
-  } else if (bar) {
-    hoverArc = null; state.hoverEp = +bar.dataset.ep;
-    const n = visible().filter((c) => c.from.ep === state.hoverEp || c.to.ep === state.hoverEp).length;
-    showTip(`<div class="arc-route"><span>${ep(state.hoverEp).label}</span></div><p class="arc-note">episode ${state.hoverEp} · ${n} connection${n === 1 ? '' : 's'}</p>`, e);
-  } else {
-    hoverArc = null; state.hoverEp = null; hideTip();
+  if (bar) { hideTip(); if (!cardState.pinned) openEp(+bar.dataset.ep); return; }
+  if (!epCard.hidden && !cardState.pinned) {
+    // the card hangs below the episodes: heading down, give the pointer a beat to reach it; heading up, close now
+    const barTop = svg.getBoundingClientRect().top + geo.y0;
+    if (e.clientY < barTop) closeEp(); else { laterClose(); return; }
   }
+  if (hit) { hoverArc = hit.dataset.id; showTip(describe(byId(hoverArc)), e); }
+  else { hoverArc = null; hideTip(); }
   paint();
 });
-svg.addEventListener('pointerleave', () => { hoverArc = null; state.hoverEp = null; hideTip(); paint(); });
+svg.addEventListener('pointerleave', (e) => {
+  hoverArc = null; hideTip();
+  const r = epCard.getBoundingClientRect();         // leaving toward the card keeps it a beat; anywhere else, close
+  const toward = !epCard.hidden && e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top - 14;
+  if (toward) laterClose(); else if (!cardState.pinned) closeEp();
+  paint();
+});
 svg.addEventListener('click', (e) => {
   const hit = e.target.closest('.hit'), bar = e.target.closest('.ep');
-  if (hit) pin(state.pinned === hit.dataset.id ? null : hit.dataset.id);
-  else if (bar) { state.hoverEp = state.hoverEp === +bar.dataset.ep && e.pointerType !== 'mouse' ? null : +bar.dataset.ep; pin(null); }
-  else { state.hoverEp = null; pin(null); }
+  if (bar) {
+    const n = +bar.dataset.ep;
+    pin(null);
+    if (cardState.pinned && cardState.n === n) closeEp(); else { cardState.pinned = false; openEp(n, true); }
+  } else if (hit) { closeEp(); pin(state.pinned === hit.dataset.id ? null : hit.dataset.id); }
+  else { closeEp(); pin(null); }
 });
 svg.addEventListener('keydown', (e) => {
   const hit = e.target.closest('.hit');
@@ -264,4 +373,6 @@ root.querySelector('.arc-key').innerHTML = `
   pin(null);
   draw();
   new ResizeObserver(() => draw()).observe(root.querySelector('.chart'));
+  let lastH = innerHeight;
+  addEventListener('resize', () => { if (innerHeight !== lastH) { lastH = innerHeight; draw(); } });
 })();
