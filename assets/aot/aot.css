@@ -57,7 +57,7 @@ html:has(> body.post-page) { background: #16171c; }
 .arc-check { margin: 6px 0 0; font-size: 12px; color: #b5651d; }
 
 /* the episode card: folds down out of the episode it belongs to, always the same height; a row opens the clip view */
-.ep-card { position: absolute; z-index: 6; display: flex; flex-direction: column; width: min(320px, calc(100% - 8px)); height: 236px;
+.ep-card { position: absolute; z-index: 6; display: flex; flex-direction: column; width: min(376px, calc(100% - 8px)); height: 248px;
   background: #fff; border-radius: 12px; font-size: 13px; line-height: 1.45; transform-origin: var(--px, 50%) 0;
   box-shadow: 0 0 0 .5px rgba(45, 58, 104, .18), 0 14px 32px -10px rgba(45, 58, 104, .4); transition: left .18s ease; }
 .ep-card[hidden] { display: none; }
@@ -73,9 +73,14 @@ html:has(> body.post-page) { background: #16171c; }
 .ep-card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; height: 56px; box-sizing: border-box; padding: 10px 10px 8px 14px;
   border-bottom: 1px solid #eef0f4; }
 .ep-card-title { flex: 1; min-width: 0; display: flex; align-items: flex-start; gap: 8px; }
-/* the header's top line: the episode and the count are both 13px on one 18px line, so their letters stand on the
-   same baseline; the × is centred on the capitals of that line */
-.ep-card-title .name { flex: none; line-height: 18px; font-size: 13px; font-weight: 650; color: #2d3a68; }
+/* the header's top line: the episode, the title's first line and the count are all 13px on one 18px line, so their
+   letters stand on the same baseline; the × is centred on the capitals of that line */
+/* the episode's name: always two lines of room, so the header keeps one height whichever episode you're on */
+/* (lifted 1px: it's mostly lowercase and lighter than the bold capitals beside it, so on the true baseline its top
+   reads as lower; this is the usual optical correction) */
+.ep-title { flex: 1; min-width: 0; height: 36px; line-height: 18px; color: var(--ink-soft, #555); font-size: 13px; position: relative; top: -1px;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.ep-card-title .name { flex: none; min-width: 4.1em; line-height: 18px; font-size: 13px; font-weight: 650; color: #2d3a68; }   /* as wide as the widest ("Movie 2"), so every title starts at the same spot */
 /* top right, against the close button: its right edge never moves, whichever episode */
 .ep-card-end { flex: none; display: flex; align-items: center; gap: 2px; height: 18px; }
 .ep-card-end .overall { line-height: 18px; color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
@@ -146,9 +151,9 @@ html:has(> body.post-page) { background: #16171c; }
 
 /* ---- on the night reading page (assets/post/post.css): the figure in night colours, a little wider than the text ---- */
 /* no panel: the chart sits straight on the night, centred on the page and wider than the text column */
-/* (the 250px underneath is room for the episode card) */
+/* (the 262px underneath is room for the episode card) */
 .post-page .post-body .arcs { --w: min(1180px, calc(100vw - 48px)); width: var(--w); margin: 48px 0 0 calc((100% - var(--w)) / 2);
-  padding: 0 0 250px; background: none; box-shadow: none; border-radius: 0; color: var(--ink); font-size: 14px; line-height: 1.5; }
+  padding: 0 0 262px; background: none; box-shadow: none; border-radius: 0; color: var(--ink); font-size: 14px; line-height: 1.5; }
 /* a heading for the contents rail only: off the page, still read out by screen readers */
 .post-body h2.rail-only { position: absolute; width: 1px; height: 1px; margin: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .post-page .ep { fill: #3a3c46; }

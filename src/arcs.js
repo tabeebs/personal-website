@@ -20,12 +20,105 @@ const PARTS = [
   { names: ['Season 4 Part 2', 'S4 P2'], season: 4, offset: 16, count: 12 },
   { names: ['Movies', 'Movies'], special: true, count: 2, runtimes: [61, 85] },
 ];
+// Episode titles in airing order, as Wikipedia's "List of Attack on Titan episodes" gives them in English.
+const TITLES = [
+  "To You, in 2000 Years: The Fall of Shiganshina, Part 1",
+  "That Day: The Fall of Shiganshina, Part 2",
+  "A Dim Light Amid Despair: Humanity's Comeback, Part 1",
+  "The Night of the Closing Ceremony: Humanity's Comeback, Part 2",
+  "First Battle: The Struggle for Trost, Part 1",
+  "The World the Girl Saw: The Struggle for Trost, Part 2",
+  "Small Blade: The Struggle for Trost, Part 3",
+  "I Can Hear His Heartbeat: The Struggle for Trost, Part 4",
+  "Whereabouts of His Left Arm: The Struggle for Trost, Part 5",
+  "Response: The Struggle for Trost, Part 6",
+  "Idol: The Struggle for Trost, Part 7",
+  "Wound: The Struggle for Trost, Part 8",
+  "Primal Desire: The Struggle for Trost, Part 9",
+  "Can't Look into His Eyes Yet: Eve of the Counterattack, Part 1",
+  "Special Operations Squad: Eve of the Counterattack, Part 2",
+  "What Needs to Be Done Now: Eve of the Counterattack, Part 3",
+  "Female Titan: The 57th Exterior Scouting Mission, Part 1",
+  "Forest of Giant Trees: The 57th Exterior Scouting Mission, Part 2",
+  "Bite: The 57th Exterior Scouting Mission, Part 3",
+  "Erwin Smith: The 57th Exterior Scouting Mission, Part 4",
+  "Crushing Blow: The 57th Exterior Scouting Mission, Part 5",
+  "The Defeated: The 57th Exterior Scouting Mission, Part 6",
+  "Smile: Assault on Stohess, Part 1",
+  "Mercy: Assault on Stohess, Part 2",
+  "Wall: Assault on Stohess, Part 3",
+  "Beast Titan",
+  "I'm Home",
+  "Southwestward",
+  "Soldier",
+  "Historia",
+  "Warrior",
+  "Close Combat",
+  "The Hunters",
+  "Opening",
+  "Children",
+  "Charge",
+  "Scream",
+  "Smoke Signal",
+  "Pain",
+  "Old Story",
+  "Trust",
+  "Reply",
+  "Sin",
+  "Wish",
+  "Outside the Walls of Orvud District",
+  "Ruler of the Walls",
+  "Friends",
+  "Bystander",
+  "Night of the Battle to Retake the Wall",
+  "The Town Where Everything Began",
+  "Thunder Spears",
+  "Descent",
+  "Perfect Game",
+  "Hero",
+  "Midnight Sun",
+  "The Basement",
+  "That Day",
+  "Attack Titan",
+  "The Other Side of the Wall",
+  "The Other Side of the Sea",
+  "Midnight Train",
+  "The Door of Hope",
+  "From One Hand to Another",
+  "Declaration of War",
+  "The War Hammer Titan",
+  "Assault",
+  "Assassin's Bullet",
+  "Brave Volunteers",
+  "A Sound Argument",
+  "Deceiver",
+  "Guides",
+  "Children of the Forest",
+  "Savagery",
+  "Sole Salvation",
+  "Above and Below",
+  "Judgment",
+  "Sneak Attack",
+  "Two Brothers",
+  "Memories of the Future",
+  "From You, 2,000 Years Ago",
+  "Thaw",
+  "Sunset",
+  "Pride",
+  "Night of the End",
+  "Traitor",
+  "Retrospective",
+  "The Dawn of Humanity",
+  "The Final Chapters (Part 1)",
+  "The Final Chapters (Part 2)",
+];
 const EPS = [];
 PARTS.forEach((p, pi) => {
   for (let i = 0; i < p.count; i++) {
     EPS.push({
       n: EPS.length + 1, part: pi,
       label: p.special ? `Movie ${i + 1}` : `S${p.season} E${p.offset + i + 1}`,
+      title: TITLES[EPS.length],
       mins: p.runtimes ? p.runtimes[i] : 24,
     });
   }
@@ -242,7 +335,7 @@ const epCard = document.createElement('div');
 epCard.className = 'ep-card';
 epCard.hidden = true;
 root.append(epCard);
-const CARD_H = 236 + 12;                             // the episode card's height (aot.css) and its gap
+const CARD_H = 248 + 12;                             // the episode card's height (aot.css) and its gap
 const cardState = { n: null, pinned: false, closeT: 0, list: [] };
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -374,7 +467,7 @@ function openEp(n, pinIt = false) {
   cardState.list = list;
   epCard.innerHTML = `
     <div class="ep-card-head">
-      <div class="ep-card-title"><span class="name">${ep(n).label}</span></div>
+      <div class="ep-card-title"><span class="name">${ep(n).label}</span><span class="ep-title" title="${ep(n).title.replace(/"/g, '&quot;')}">${ep(n).title}</span></div>
       <div class="ep-card-end"><span class="overall">(${n}/${EPS.length})</span>
         <button type="button" class="ep-card-x" aria-label="Close"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
           <path d="M1.5 1.5l7 7M8.5 1.5l-7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg></button></div>
