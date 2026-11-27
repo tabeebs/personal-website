@@ -186,9 +186,17 @@ function paint() {
     if (on) { any = true; p.parentNode.append(p); }   // bring it to the front
   }
   svg.classList.toggle('focused', any);
+  // the episodes in play: both ends of the arc in focus, or the hovered episode plus every episode it connects to
+  const lit = new Set(), c = focus && byId(focus);
+  if (c) lit.add(c.from.ep).add(c.to.ep);
+  else if (touching) {
+    lit.add(touching);
+    for (const k of real) if (k.from.ep === touching || k.to.ep === touching) lit.add(k.from.ep).add(k.to.ep);
+  }
   svg.querySelectorAll('.ep').forEach((r) => {
-    const n = +r.dataset.ep, c = focus && byId(focus);
-    r.classList.toggle('lit', c ? (n === c.from.ep || n === c.to.ep) : n === touching);
+    const n = +r.dataset.ep;
+    r.classList.toggle('lit', lit.has(n));
+    r.classList.toggle('here', !c && n === touching);   // the one you're on, brightest
   });
 }
 const byId = (id) => real.find((c) => c.id === id);
